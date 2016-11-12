@@ -5,8 +5,6 @@
 ".\outputs\templatefsm.o"
 ".\outputs\es_shorttimer.o"
 ".\outputs\shiftregisterwrite.o"
-".\outputs\lcd_write.o"
-".\outputs\lcdservice.o"
 ".\outputs\morseservice.o"
 ".\outputs\morsedecode.o"
 ".\outputs\buttondebounce.o"

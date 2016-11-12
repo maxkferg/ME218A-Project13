@@ -3,36 +3,25 @@
 <pre>
 <h1>µVision Build Log</h1>
 <h2>Project:</h2>
-U:\maxferg\Project\Code\MorseCode.uvprojx
+U:\_ME218aTeams\Team13\ProjectCode\MorseCode.uvprojx
 Project File Date:  11/11/2016
 
 <h2>Output:</h2>
 Build target 'BaseFrameworkTarget'
-compiling FourierService.c...
 compiling ES_ShortTimer.c...
 linking...
 .\Outputs\BaseTarget.axf: Warning: L6304W: Duplicate input file .\outputs\es_shorttimer.o ignored.
-Program Size: Code=20458 RO-data=1618 RW-data=568 ZI-data=2288  
-Finished: 0 information, 1 warning and 0 error messages.
-After Build - User command #1: fromelf --bin --output .\Outputs\BaseTarget.bin .\Outputs\BaseTarget.axf
-".\Outputs\BaseTarget.axf" - 0 Error(s), 1 Warning(s).
-Load "U:\\maxferg\\Project\\Code\\Outputs\\BaseTarget.axf" 
-Connecting: Mode=JTAG, Speed=1000000Hz
-Erase Done.
-Programming Done.
-Verify OK.
-</pre>
-</body>
-</html>
-rning: L6304W: Duplicate input file .\outputs\es_shorttimer.o ignored.
-Program Size: Code=20386 RO-data=1618 RW-data=568 ZI-data=2288  
-Finished: 0 information, 1 warning and 0 error messages.
-After Build - User command #1: fromelf --bin --output .\Outputs\BaseTarget.bin .\Outputs\BaseTarget.axf
-".\Outputs\BaseTarget.axf" - 0 Error(s), 3 Warning(s).
-uts\es_shorttimer.o ignored.
-Program Size: Code=16614 RO-data=1326 RW-data=568 ZI-data=2288  
-Finished: 0 information, 1 warning and 0 error messages.
-After Build - User command #1: fromelf --bin --output .\Outputs\BaseTarget.bin .\Outputs\BaseTarget.axf
-".\Outputs\BaseTarget.axf" - 0 Error(s), 5 Warning(s).
-tputs\BaseTarget.bin .\Outputs\BaseTarget.axf
-".\Outputs\BaseTarget.axf" - 0 Error(s), 5 Warning(s).
+.\Outputs\BaseTarget.axf: Error: L6218E: Undefined symbol PostLCDService (referred from morsedecode.o).
+.\Outputs\BaseTarget.axf: Error: L6218E: Undefined symbol InitLCDService (referred from es_framework.o).
+.\Outputs\BaseTarget.axf: Error: L6218E: Undefined symbol RunLCDService (referred from es_framework.o).
+Not enough information to list image symbols.
+Finished: 1 information, 1 warning and 3 error messages.
+".\Outputs\BaseTarget.axf" - 3 Error(s), 1 Warning(s).
+Target not created
+ from morsedecode.o).
+.\Outputs\BaseTarget.axf: Error: L6218E: Undefined symbol InitLCDService (referred from es_framework.o).
+.\Outputs\BaseTarget.axf: Error: L6218E: Undefined symbol RunLCDService (referred from es_framework.o).
+Not enough information to list image symbols.
+Finished: 1 information, 1 warning and 3 error messages.
+".\Outputs\BaseTarget.axf" - 3 Error(s), 3 Warning(s).
+Target not created
