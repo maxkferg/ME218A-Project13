@@ -30,7 +30,7 @@
 /****************************************************************************/
 // This macro determines that nuber of services that are *actually* used in
 // a particular application. It will vary in value from 1 to MAX_NUM_SERVICES
-#define NUM_SERVICES 5
+#define NUM_SERVICES 4
 
 /****************************************************************************/
 // These are the definitions for Service 0, the lowest priority service.
@@ -38,11 +38,11 @@
 // services are added in numeric sequence (1,2,3,...) with increasing 
 // priorities
 // the header file with the public function prototypes
-#define SERV_0_HEADER "LCDService.h"
+#define SERV_0_HEADER "FourierService.h"
 // the name of the Init function
-#define SERV_0_INIT InitLCDService
+#define SERV_0_INIT InitFourierService
 // the name of the run function
-#define SERV_0_RUN RunLCDService
+#define SERV_0_RUN RunFourierService
 // How big should this services Queue be?
 #define SERV_0_QUEUE_SIZE 3
 
@@ -56,9 +56,9 @@
 // the header file with the public function prototypes
 #define SERV_1_HEADER "MorseDecode.h"
 // the name of the Init function
-#define SERV_1_INIT InitMorseDecode
+#define SERV_1_INIT InitFourierService
 // the name of the run function
-#define SERV_1_RUN RunMorseDecode
+#define SERV_1_RUN RunFourierService
 // How big should this services Queue be?
 #define SERV_1_QUEUE_SIZE 3
 #endif
@@ -93,11 +93,11 @@
 // These are the definitions for Service 4
 #if NUM_SERVICES > 4
 // the header file with the public function prototypes
-#define SERV_4_HEADER "FourierService.h"
+#define SERV_4_HEADER "TestHarnessService4.h"
 // the name of the Init function
-#define SERV_4_INIT InitFourierService
+#define SERV_4_INIT InitTestHarnessService4
 // the name of the run function
-#define SERV_4_RUN RunFourierService
+#define SERV_4_RUN RunTestHarnessService4
 // How big should this services Queue be?
 #define SERV_4_QUEUE_SIZE 3
 #endif
@@ -279,10 +279,10 @@ typedef enum {  ES_NO_EVENT = 0,
 // services are on that distribution list.
 #define NUM_DIST_LISTS 1
 #if NUM_DIST_LISTS > 0 
-#define DIST_LIST0 PostLCDService, PostLCDService
+#define DIST_LIST0 PostTestHarnessService1, PostTestHarnessService1
 #endif
 #if NUM_DIST_LISTS > 1 
-#define DIST_LIST1 PostTestHarnessService1, PostTestHarnessService1
+#define DIST_LIST1 PostTemplateFSM
 #endif
 #if NUM_DIST_LISTS > 2
 #define DIST_LIST2 PostTemplateFSM
