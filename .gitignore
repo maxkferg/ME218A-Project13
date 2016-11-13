@@ -1,3 +1,9 @@
-.o
-.bak
+*.o
+*.bak
+*.uvopt
+*.uvoptx
+*.uvprojx
+*.uvgui
+*.dep
+*.maxferg
 Outputs
