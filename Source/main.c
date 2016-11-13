@@ -26,11 +26,6 @@
 #include "ES_Port.h"
 #include "termio.h"
 
-// Custom module includes
-#include "ShiftRegisterWrite.h"
-#include "LCDService.h"
-
-
 #define clrScrn() printf("\x1b[2J")
 #define goHome()	printf("\x1b[1,1H")
 #define clrLine()	printf("\x1b[K")

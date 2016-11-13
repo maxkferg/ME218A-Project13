@@ -260,17 +260,23 @@ typedef enum {  ES_NO_EVENT = 0,
                 ES_LOCK,
                 ES_UNLOCK,
 
-                RisingEdge,
-                FallingEdge,
-                CalCompleted,
-                EOCDetected,
-                EOWDetected,
-                DotDetected,
-                DashDetected,
-                BadPulse,
-                BadSpace,
-                ButtonUp,
-                ButtonDown
+								CHANGE_LED_1,
+								CHANGE_LED_2,
+								CHANGE_LED_3,
+								CHANGE_LED_4,
+								CHANGE_LED_5,
+								CHANGE_LED_6,
+								CHANGE_LED_7,
+								CHANGE_LED_8,
+	
+								CHANGE_WATER_1,
+								CHANGE_WATER_2,
+								CHANGE_WATER_3,
+								CHANGE_WATER_4,
+								CHANGE_WATER_5,
+								CHANGE_WATER_6,
+								CHANGE_WATER_7,
+								CHANGE_WATER_8
 } ES_EventTyp_t;
 
 /****************************************************************************/

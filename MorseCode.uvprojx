@@ -655,6 +655,16 @@
               <FileType>4</FileType>
               <FilePath>C:\ti\TivaWare_C_Series-2.1.0.12573\driverlib\rvmdk\driverlib.lib</FilePath>
             </File>
+            <File>
+              <FileName>kiss_fft.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\Lib\KissFourier\kiss_fft.h</FilePath>
+            </File>
+            <File>
+              <FileName>kiss_fft.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Lib\KissFourier\kiss_fft.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
@@ -793,22 +803,79 @@
           </Files>
         </Group>
         <Group>
-          <GroupName>KissFourier</GroupName>
+          <GroupName>LifecycleService</GroupName>
           <Files>
             <File>
-              <FileName>kiss_fft.c</FileName>
+              <FileName>LifecycleService.c</FileName>
               <FileType>1</FileType>
-              <FilePath>.\KissFourier\kiss_fft.c</FilePath>
+              <FilePath>.\Source\LifecycleService.c</FilePath>
             </File>
             <File>
-              <FileName>kiss_fft.h</FileName>
+              <FileName>LifeCycleService.h</FileName>
               <FileType>5</FileType>
-              <FilePath>.\KissFourier\kiss_fft.h</FilePath>
+              <FilePath>.\Headers\LifeCycleService.h</FilePath>
             </File>
           </Files>
         </Group>
         <Group>
-          <GroupName>LifecycleService</GroupName>
+          <GroupName>MicrophoneService</GroupName>
+          <Files>
+            <File>
+              <FileName>MicrophoneService.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Source\MicrophoneService.c</FilePath>
+            </File>
+            <File>
+              <FileName>MicrophoneService.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\Headers\MicrophoneService.h</FilePath>
+            </File>
+          </Files>
+        </Group>
+        <Group>
+          <GroupName>SensitivityService</GroupName>
+          <Files>
+            <File>
+              <FileName>SensitivityService.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Source\SensitivityService.c</FilePath>
+            </File>
+            <File>
+              <FileName>SensitivityService.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\Headers\SensitivityService.h</FilePath>
+            </File>
+          </Files>
+        </Group>
+        <Group>
+          <GroupName>WatertubeService</GroupName>
+          <Files>
+            <File>
+              <FileName>WaterTubeService.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Source\WaterTubeService.c</FilePath>
+            </File>
+            <File>
+              <FileName>WaterTubeService.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\Headers\WaterTubeService.h</FilePath>
+            </File>
+          </Files>
+        </Group>
+        <Group>
+          <GroupName>LEDService</GroupName>
+          <Files>
+            <File>
+              <FileName>LEDService.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Source\LEDService.c</FilePath>
+            </File>
+            <File>
+              <FileName>LEDService.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\Headers\LEDService.h</FilePath>
+            </File>
+          </Files>
         </Group>
       </Groups>
     </Target>
