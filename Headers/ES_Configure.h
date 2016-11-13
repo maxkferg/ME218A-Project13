@@ -38,11 +38,11 @@
 // services are added in numeric sequence (1,2,3,...) with increasing 
 // priorities
 // the header file with the public function prototypes
-#define SERV_0_HEADER "FourierService.h"
+#define SERV_0_HEADER "LifecycleService.h"
 // the name of the Init function
-#define SERV_0_INIT InitFourierService
+#define SERV_0_INIT InitLifecycleService
 // the name of the run function
-#define SERV_0_RUN RunFourierService
+#define SERV_0_RUN RunLifecycleService
 // How big should this services Queue be?
 #define SERV_0_QUEUE_SIZE 3
 
@@ -54,11 +54,11 @@
 // These are the definitions for Service 1
 #if NUM_SERVICES > 1
 // the header file with the public function prototypes
-#define SERV_1_HEADER "MorseDecode.h"
+#define SERV_1_HEADER "MicrophoneService.h"
 // the name of the Init function
-#define SERV_1_INIT InitFourierService
+#define SERV_1_INIT InitMicrophoneService
 // the name of the run function
-#define SERV_1_RUN RunFourierService
+#define SERV_1_RUN RunMicrophoneService
 // How big should this services Queue be?
 #define SERV_1_QUEUE_SIZE 3
 #endif
@@ -67,11 +67,11 @@
 // These are the definitions for Service 2
 #if NUM_SERVICES > 2
 // the header file with the public function prototypes
-#define SERV_2_HEADER "MorseService.h"
+#define SERV_2_HEADER "SensitivityService.h"
 // the name of the Init function
-#define SERV_2_INIT InitMorseService
+#define SERV_2_INIT InitSensitivityService
 // the name of the run function
-#define SERV_2_RUN RunMorseService
+#define SERV_2_RUN RunSensitivityService
 // How big should this services Queue be?
 #define SERV_2_QUEUE_SIZE 3
 #endif
@@ -80,11 +80,11 @@
 // These are the definitions for Service 3
 #if NUM_SERVICES > 3
 // the header file with the public function prototypes
-#define SERV_3_HEADER "ButtonDebounce.h"
+#define SERV_3_HEADER "WatertubeService.h"
 // the name of the Init function
-#define SERV_3_INIT InitButtonDebounceService
+#define SERV_3_INIT InitWatertubeService
 // the name of the run function
-#define SERV_3_RUN RunMorseDebounceService
+#define SERV_3_RUN RunWatertubeService
 // How big should this services Queue be?
 #define SERV_3_QUEUE_SIZE 3
 #endif
@@ -93,11 +93,11 @@
 // These are the definitions for Service 4
 #if NUM_SERVICES > 4
 // the header file with the public function prototypes
-#define SERV_4_HEADER "TestHarnessService4.h"
+#define SERV_4_HEADER "LEDService.h"
 // the name of the Init function
-#define SERV_4_INIT InitTestHarnessService4
+#define SERV_4_INIT RunLEDService
 // the name of the run function
-#define SERV_4_RUN RunTestHarnessService4
+#define SERV_4_RUN RunLEDService
 // How big should this services Queue be?
 #define SERV_4_QUEUE_SIZE 3
 #endif
@@ -260,6 +260,7 @@ typedef enum {  ES_NO_EVENT = 0,
                 ES_LOCK,
                 ES_UNLOCK,
 
+								// LED Service Events
 								CHANGE_LED_1,
 								CHANGE_LED_2,
 								CHANGE_LED_3,
@@ -269,6 +270,7 @@ typedef enum {  ES_NO_EVENT = 0,
 								CHANGE_LED_7,
 								CHANGE_LED_8,
 	
+								// Water tube service events
 								CHANGE_WATER_1,
 								CHANGE_WATER_2,
 								CHANGE_WATER_3,
@@ -276,7 +278,10 @@ typedef enum {  ES_NO_EVENT = 0,
 								CHANGE_WATER_5,
 								CHANGE_WATER_6,
 								CHANGE_WATER_7,
-								CHANGE_WATER_8
+								CHANGE_WATER_8,
+								
+								// Microphone Service Events
+								NEW_SOUND_RECORDED
 } ES_EventTyp_t;
 
 /****************************************************************************/
@@ -285,7 +290,7 @@ typedef enum {  ES_NO_EVENT = 0,
 // services are on that distribution list.
 #define NUM_DIST_LISTS 1
 #if NUM_DIST_LISTS > 0 
-#define DIST_LIST0 PostTestHarnessService1, PostTestHarnessService1
+#define DIST_LIST0 PostMicrophoneService,
 #endif
 #if NUM_DIST_LISTS > 1 
 #define DIST_LIST1 PostTemplateFSM
@@ -315,7 +320,7 @@ typedef enum {  ES_NO_EVENT = 0,
 
 /****************************************************************************/
 // This is the list of event checking functions
-#define EVENT_CHECK_LIST Check4Keystroke, Check4Morse, Check4Button
+#define EVENT_CHECK_LIST Check4Keystroke,ES_CheckMicrophone
 //#define EVENT_CHECK_LIST Check4Morse
 
 
@@ -340,7 +345,7 @@ typedef enum {  ES_NO_EVENT = 0,
 #define TIMER11_RESP_FUNC TIMER_UNUSED
 #define TIMER12_RESP_FUNC TIMER_UNUSED
 #define TIMER13_RESP_FUNC TIMER_UNUSED
-#define TIMER14_RESP_FUNC PostButtonDebounceService
+#define TIMER14_RESP_FUNC TIMER_UNUSED
 #define TIMER15_RESP_FUNC TIMER_UNUSED
 
 /****************************************************************************/
