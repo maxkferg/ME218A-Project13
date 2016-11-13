@@ -22,16 +22,8 @@ extern "C" {
  Then see kfc.h kiss_fftr.h kiss_fftnd.h fftutil.c kiss_fastfir.c
   in the tools/ directory.
 */
-
-#ifdef USE_SIMD
-# include <xmmintrin.h>
-# define kiss_fft_scalar __m128
-#define KISS_FFT_MALLOC(nbytes) _mm_malloc(nbytes,16)
-#define KISS_FFT_FREE _mm_free
-#else	
 #define KISS_FFT_MALLOC malloc
 #define KISS_FFT_FREE free
-#endif	
 
 
 #ifdef FIXED_POINT

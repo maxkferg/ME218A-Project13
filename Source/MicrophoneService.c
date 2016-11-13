@@ -64,7 +64,7 @@
 #define HALF_SEC (ONE_SEC/2)
 #define TWO_SEC (ONE_SEC*2)
 
-#define N 12
+#define N 16
 #define MICROPHONE_PIN 0 
 
 
@@ -500,14 +500,21 @@ static void RunFFTTest(void){
   size_t i;
 
   for (i = 0; i < N; i++)
-		in[i].r = sin(2 * M_PI * 4 * i / N), in[i].i = 0;
+    in[i].r = in[i].i = 0;
+  TestFft("Zeroes (complex)", in, out);
+
+  for (i = 0; i < N; i++)
+    in[i].r = 1, in[i].i = 0;
+  TestFft("Ones (complex)", in, out);
+
+  for (i = 0; i < N; i++)
+    in[i].r = sin(2 * M_PI * 4 * i / N), in[i].i = 0;
   TestFft("SineWave (complex)", in, out);
-	
+
 	printf("*********************************\r\n");
 	printf("******* AND WE'RE DONE **********\r\n");
 	printf("*********************************\r\n");	
 }
-
 
 
 static void TestFft(const char* title, const kiss_fft_cpx in[N], kiss_fft_cpx out[N])
@@ -516,13 +523,13 @@ static void TestFft(const char* title, const kiss_fft_cpx in[N], kiss_fft_cpx ou
 
   printf("%s\n", title);
 
-	cfg = kiss_fft_alloc(N, 0, NULL, NULL);
-  if (cfg != NULL)
+  if ((cfg = kiss_fft_alloc(N, 0/*is_inverse_fft*/, NULL, NULL)) != NULL)
   {
     size_t i;
 
     kiss_fft(cfg, in, out);
-    
+    free(cfg);
+
     for (i = 0; i < N; i++)
       printf(" in[%2zu] = %+f , %+f    "
              "out[%2zu] = %+f , %+f\r\n",
