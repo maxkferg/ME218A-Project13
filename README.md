@@ -6,9 +6,9 @@ Microcontroller code for team 13 group project
 
 ### LifecycleService (Josh)
    LifeCycleService controls the following:
-	1) Welcome performance
-	2) Passage of time
-	3) Final performance	
+   1) Welcome performance
+   2) Passage of time
+   3) Final performance	
    The Lifecycle service does not interface with any hardware=it only post messages to the hardware services (Water tube and LED service)
   
 ### MicrophoneService (Max)
