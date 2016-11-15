@@ -64,23 +64,27 @@
 #define HALF_SEC (ONE_SEC/2)
 #define TWO_SEC (ONE_SEC*2)
 
-#define N 16
+#define N 32
 #define MICROPHONE_PIN 0 
+#define clrScrn() printf("\x1b[2J")
 
 
 /*---------------------------- Module Functions ---------------------------*/
 /* prototypes for private functions for this service. They should be functions
    relevant to the behavior of this service
 */
-static void PrintAudioBuffer();
-static void PrintFourierBuffer();
+static void PrintAudioBuffer( void );
+static void PrintFourierBuffer( void );
+static void PrintAverageBuffer( void );
 static void PushAudioBuffer(float newValue);
+static void PushAverageBuffer( void );
 static float SumFourierOutputs(uint16_t Start, uint16_t End);
 static float GetWaterHeight(uint8_t WaterTubeNumber, float Sensitivity);
 static void PerformFFT(void);
 	
 static void TestFft(const char* title, const kiss_fft_cpx in[N], kiss_fft_cpx out[N]);
 static void RunFFTTest(void);
+static float square(float b);
 
 
 /*---------------------------- Module Variables ---------------------------*/
@@ -89,13 +93,12 @@ static uint8_t MyPriority;
 
 static uint8_t CurrentState;
 
-static uint8_t LastInputState;
-
 // We keep a buffer of N values to perform the FFT over
 // New values are pushed to the front of the array and any overflow is discarded
 // After performing the fourier transform we are left with N FourierOutput values
 static kiss_fft_cpx AudioBuffer[N];
 static kiss_fft_cpx FourierOutput[N];
+static float AverageBuffer[N];
 
 /*------------------------------ Module Code ------------------------------*/
 /****************************************************************************
@@ -176,29 +179,42 @@ bool PostMicrophoneService( ES_Event ThisEvent )
 bool CheckMicrophoneEvents(void)
 {
 	uint32_t ADInput[4];
-	uint8_t CurrentInputStatus;
+	uint32_t CurrentInputStatus;
 	ES_Event CurrentEvent;
+	static uint32_t FrequencyCounter;
+	float intensity = 0;
 	bool isEvent = false;
 	
 	// Read the microphoine port
 	ADC_MultiRead(ADInput);
-	
+
 	// Check the value on the port
 	CurrentInputStatus = ADInput[MICROPHONE_PIN]; 
-
-	if ( CurrentInputStatus > (LastInputState+50) || CurrentInputStatus < (LastInputState-50)){
-		// Post the event to the event system	
-		 printf("New event with %i\r\n",CurrentInputStatus);
-		CurrentEvent.EventType = NEW_SOUND_RECORDED;
-		CurrentEvent.EventParam = CurrentInputStatus;
-		PostMicrophoneService(CurrentEvent);
-		
-		// Update LastInputState
-		LastInputState = CurrentInputStatus;
-		isEvent = true;
-	}	
-
 	
+	// Increase the count
+	FrequencyCounter+=1;
+	
+	// Normalize to [0, 1]
+	intensity = (float)CurrentInputStatus;
+	intensity = (intensity/4096);
+
+	// Push the new value to the audio buffer 
+	PushAudioBuffer(intensity);
+	
+	if ( FrequencyCounter % 1000 == 0 ){
+		printf(".");
+		PerformFFT();
+		PushAverageBuffer();
+  }
+	
+	if ( FrequencyCounter % 18000 == 0 ){
+		FrequencyCounter = 0;
+		printf("\r\nLast input was %i\r\n",CurrentInputStatus);
+		CurrentEvent.EventType = NEW_SOUND_RECORDED;
+		CurrentEvent.EventParam = 0;
+		PostMicrophoneService(CurrentEvent);
+		isEvent = true;
+  }
 	return isEvent;
 }
 
@@ -234,22 +250,13 @@ ES_Event RunMicrophoneService( ES_Event ThisEvent )
 			// printf("Microphone: Entered the WaterState\r\n");
 			if (ThisEvent.EventType==NEW_SOUND_RECORDED){
 				
-				// Cast the event parameter to a float
-				float intensity = ThisEvent.EventParam;
-				
-				// Normalize to [-0.5, 0.5]
-				intensity = intensity/255-0.5;
-				
-				// Push the new value to the audio buffer 
-				PushAudioBuffer(intensity);
-				
 				// Calculate the FFT.
 				// Input will be AudioBuffer
 				// Output will be FouriererOutputs
 				// Print the audio buffer
 				PrintAudioBuffer();
-				PerformFFT();
 				PrintFourierBuffer();
+				PrintAverageBuffer();
 			
 				// Water tube 1
 				WaterTubeEvent.EventType = CHANGE_WATER_1;
@@ -367,7 +374,7 @@ static float GetWaterHeight(uint8_t WaterTubeNumber, float Sensitivity){
 ****************************************************************************/
 static void PrintAudioBuffer(){
 	// Shift all items right by one
-	printf("[");
+	printf("A[");
 	for (int k=0; k<N; k++){   
     printf("%.2f,",AudioBuffer[k].r);
 	}
@@ -385,22 +392,30 @@ static void PrintAudioBuffer(){
 		Print the values in the Fourier Coefficients
 ****************************************************************************/
 static void PrintFourierBuffer(){
-	// Shift all items right by one
-	printf("Real Coefficients\r\n[");
+	printf("F[");
 	for (int k=0; k<N; k++){   
     printf("%.2f,",FourierOutput[k].r);
 	}
-	// Append the new value
-	printf("]\r\n");
-	
-	printf("Imaginary Coefficients\r\n[");
-	for (int k=0; k<N; k++){   
-    printf("%.2f,",FourierOutput[k].i);
-	}
-	// Append the new value
 	printf("]\r\n");
 }
 
+
+
+/****************************************************************************
+ Function
+    PrintFourierOutput
+
+	Description
+		Print the values in the Fourier Coefficients
+****************************************************************************/
+static void PrintAverageBuffer(){
+	// Shift all items right by one
+	printf("K[");
+	for (int k=0; k<N; k++){   
+    printf("%.2f,",AverageBuffer[k]);
+	}
+	printf("]\r\n");
+}
 
 
 /****************************************************************************
@@ -413,12 +428,42 @@ static void PrintFourierBuffer(){
 ****************************************************************************/
 static void PushAudioBuffer(float newValue){
 	// Shift all items right by one
+	static uint32_t count = 0;
+	newValue = sin(0.7 * M_PI * 4 * count / N);
+	
 	for (int k=N-1; k > 0; k--){   
     AudioBuffer[k].r = AudioBuffer[k-1].r;
+		AudioBuffer[k].i = 0;
 	}
 	// Append the new value
 	AudioBuffer[0].r = newValue;
+	count+=1;
 }
+
+
+
+/****************************************************************************
+ Function
+    PushAverageBuffer
+
+	Description
+		Push a single value to the audio buffer
+	  The last value in the buffer will be discarded
+****************************************************************************/
+static void PushAverageBuffer(void){
+	// Shift all items right by one
+	for (int k=0; k < N; k++){   
+    AverageBuffer[k] = 0.8*AverageBuffer[k]+0.2*square(FourierOutput[k].r);
+		if (AverageBuffer[k]<0){
+			AverageBuffer[k] = 0;
+		}
+		if (AverageBuffer[k] > 100){
+			AverageBuffer[k] = 100;
+		}
+	}
+}
+
+
 
 
 /****************************************************************************
@@ -465,7 +510,7 @@ static void PerformFFT(void){
 	// cfg is a type defined by kiss_fourier to manage state
   kiss_fft_cfg cfg;
 
-	printf("Start Fourier Transform\r\n");
+	//printf("Start Fourier Transform\r\n");
 
 	cfg = kiss_fft_alloc(N, 0, NULL, NULL);
   if (cfg != NULL)
@@ -476,7 +521,7 @@ static void PerformFFT(void){
 		printf("FOURIER TRANSFORM FAILED?\n");
     printf("NOT ENOUGH MEMORY?\n");
   }	
-	printf("End Fourier Transform\r\n");
+	//printf("End Fourier Transform\r\n");
 }
 
 
@@ -523,7 +568,7 @@ static void TestFft(const char* title, const kiss_fft_cpx in[N], kiss_fft_cpx ou
 
   printf("%s\n", title);
 
-  if ((cfg = kiss_fft_alloc(N, 0/*is_inverse_fft*/, NULL, NULL)) != NULL)
+  if ((cfg = kiss_fft_alloc(N, 0, NULL, NULL)) != NULL)
   {
     size_t i;
 
@@ -542,10 +587,17 @@ static void TestFft(const char* title, const kiss_fft_cpx in[N], kiss_fft_cpx ou
   }
 }
 
+/****************************************************************************
+ Function
+    Square
 
-
-
-
+	Description
+		Square a pin
+****************************************************************************/
+float square(float b)
+{
+    return b*b;
+}
 
 
 

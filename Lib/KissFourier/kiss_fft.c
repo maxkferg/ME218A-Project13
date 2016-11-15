@@ -343,9 +343,9 @@ kiss_fft_cfg kiss_fft_alloc(int nfft,int inverse_fft,void * mem,size_t * lenmem 
     size_t memneeded = sizeof(struct kiss_fft_state) + sizeof(kiss_fft_cpx)*(nfft-1); 
 
     if ( lenmem==NULL ) {
-			printf("KISS MEM ALLOCATION: %i\r\n",memneeded);
+			//printf("KISS MEM ALLOCATION: %i\r\n",memneeded);
 			//st = ( kiss_fft_cfg) KISS_FFT_MALLOC( memneeded );
-			char myword[392];
+			char myword[520]; // 16-> 392 bit. 32 -> 520bit
 			st = (kiss_fft_cfg)myword;
     }else{
         if (mem != NULL && *lenmem >= memneeded)
