@@ -30,9 +30,11 @@
 #include "driverlib/pin_map.h"
 #include "driverlib/gpio.h"
 
+#include "ADMulti.h" // ADC Library
+#include "PWM10Tiva.h" // PWM Library
+
 // Include my own header
 #include "WatertubeService.h"
-#include "ADMulti.h" // ADC Library
 
 /*----------------------------- Module Defines ----------------------------*/
 // these times assume a 1.000mS/tick timing
@@ -155,7 +157,7 @@ ES_Event RunWatertubeService( ES_Event ThisEvent )
 					uint32_t Voltage = ThisEvent.EventParam;
 					printf("Watertube1: CHANGE_WATER_1 %i\n\r",Voltage);
 					int PulseWidth = (Voltage*2000/4096)+1000;
-					//printf("PulseWidth = %d",PulseWidth);
+					printf("PulseWidth = %d",PulseWidth);
 					PWM_TIVA_SetPulseWidth(PulseWidth,0);
 			}
 			// Change the water height of tube 2
@@ -163,7 +165,7 @@ ES_Event RunWatertubeService( ES_Event ThisEvent )
 					uint32_t Voltage = ThisEvent.EventParam;
 					printf("Watertube2: CHANGE_WATER_2 %i\n\r",Voltage);
 					int PulseWidth = (Voltage*2000/4096)+1000;
-					//printf("PulseWidth = %d",PulseWidth);
+					printf("PulseWidth = %d",PulseWidth);
 					PWM_TIVA_SetPulseWidth(PulseWidth,1);
 			}
 			// Change the water height of tube 3

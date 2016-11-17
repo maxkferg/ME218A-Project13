@@ -181,7 +181,7 @@ bool PostMicrophoneService( ES_Event ThisEvent )
 ****************************************************************************/
 ES_Event RunMicrophoneService( ES_Event ThisEvent )
 {
-	float Sensitivity = 10.0;
+	float Sensitivity = 32;
 	ES_Event WaterTubeEvent;
 	ES_Event ReturnEvent;
   ReturnEvent.EventType = ES_NO_EVENT;
@@ -345,31 +345,33 @@ static float GetWaterHeight(uint8_t WaterTubeNumber, float Sensitivity){
 		// Depending on the water tube number we sum over different frequency ranges
 		// Water tube 1
 		case 1:
-			return Sensitivity*(SumFourierOutputs(0,100));
+			printf("Sensitivity %f",Sensitivity);
+			printf("Fourier %f",SumFourierOutputs(0,2));
+			return Sensitivity*(SumFourierOutputs(0,2));
 	
 		// Water tube 2
 		case 2:
-			return Sensitivity*(SumFourierOutputs(100,200));
+			return Sensitivity*(SumFourierOutputs(2,4));
 
 		// Water tube 3
 		case 3:
-			return Sensitivity*(SumFourierOutputs(200,300));
+			return Sensitivity*(SumFourierOutputs(4,6));
 
 		// Water tube 4			
 		case 4:
-			return Sensitivity*(SumFourierOutputs(300,400));
+			return Sensitivity*(SumFourierOutputs(6,8));
 
 		// Water tube 5
 		case 5:
-			return Sensitivity*(SumFourierOutputs(400,500));
+			return Sensitivity*(SumFourierOutputs(8,10));
 
 		// Water tube 6
 		case 6:
-			return Sensitivity*(SumFourierOutputs(500,600));
+			return Sensitivity*(SumFourierOutputs(12,14));
 
 		// Water tube 7
 		case 7:
-			return Sensitivity*(SumFourierOutputs(600,700));
+			return Sensitivity*(SumFourierOutputs(14,16));
 	}
 	printf("Unknown tube %i",WaterTubeNumber);
 	return 0;
@@ -510,8 +512,8 @@ static void PushAverageBuffer(void){
 static float SumFourierOutputs(uint16_t Start, uint16_t End){
 	// Shift all items right by one
 	float Sum = 0;
-	for (int i=Start; i > End; i++){   
-    Sum += FourierOutput[i].r;
+	for (int i=Start; i < End; i++){   
+    Sum += AverageBuffer[i];
 	}
 	return Sum;
 }

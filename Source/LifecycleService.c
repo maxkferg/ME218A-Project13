@@ -189,8 +189,9 @@ ES_Event RunLifecycleService( ES_Event ThisEvent )
 				printf("Lifecycle [waiting]: Inactivity time at %i seconds\r\n",PassageOfTime);
 			
 				printf("Lifecycle [waiting]: Press '1-7' or 'q-u' to trigger servos\r\n");
-				printf("Lifecycle [waiting]: Press '8' to trigger knob vibrator\r\n");
+				printf("Lifecycle [waiting]: Press 'i-8' to trigger knob vibrator\r\n");
 				printf("Lifecycle [waiting]: Press 'm' to turn on the microphone service\r\n");
+				printf("Lifecycle [waiting]: Press 'c' to fire the welcome performance\r\n");
 				printf("Lifecycle [waiting]: Press 'x' to trigger finale (passage_of_time_complete)\r\n");
 				printf("Lifecycle [waiting]: Press 'z' to trigger reset due to inactivity\r\n\r\n");
 				ES_Timer_InitTimer(PASSAGE_OF_TIME_TIMER,TWO_SEC); // Reset the timer
@@ -225,7 +226,7 @@ ES_Event RunLifecycleService( ES_Event ThisEvent )
 		break;
 	
 		case FinaleState:
-			if (ThisEvent.EventType==LIFECYCLE_RESET){
+			if (ThisEvent.EventType==LIFECYCLE_RESET_ALL){
 				// The user asked for a reset
 				printf("\r\nLifecycle: STATE RESET\r\n");
 				printf("Lifecycle: STATE RESET\r\n");
@@ -235,7 +236,7 @@ ES_Event RunLifecycleService( ES_Event ThisEvent )
 			} else  {
 				// Catch other events
 				printf("Lifecycle: In FinaleState\r\n");
-				printf("Press 'v' to reset\r\n");
+				printf("Press 'v' to reset (everything)\r\n");
 			}
 		break;
 	}
@@ -260,7 +261,7 @@ ES_Event RunLifecycleService( ES_Event ThisEvent )
 ****************************************************************************/
 void PostLifecycleEventGenerator( ES_Event ThisEvent ){
 	ES_Event PsuedoEvent;
-	// Microphone events (keys 1-7)
+	// Microphone events
 	if (ThisEvent.EventParam=='m'){
 		printf("MICROPHONE_START\r\n");
 		PsuedoEvent.EventType = MICROPHONE_START;
@@ -313,6 +314,19 @@ void PostLifecycleEventGenerator( ES_Event ThisEvent ){
 		PsuedoEvent.EventType = CHANGE_WATER_7;
 		PsuedoEvent.EventParam = 0;	
 		PostWatertubeService(PsuedoEvent);
+	}
+	// Knob service
+		if (ThisEvent.EventParam=='8'){
+		printf("CHANGE_KNOB_VIBRATION with value 0\r\n");
+		PsuedoEvent.EventType = CHANGE_KNOB_VIBRATION;
+		PsuedoEvent.EventParam = 0;	
+		PostKnobService(PsuedoEvent);
+	}
+	if (ThisEvent.EventParam=='i'){
+		printf("CHANGE_KNOB_VIBRATION with value 3300\r\n");
+		PsuedoEvent.EventType = CHANGE_KNOB_VIBRATION;
+		PsuedoEvent.EventParam = 3300;	
+		PostKnobService(PsuedoEvent);
 	}
 	// Tube fill events (q-u)
 		if (ThisEvent.EventParam=='q'){
@@ -390,9 +404,16 @@ void PostLifecycleEventGenerator( ES_Event ThisEvent ){
 	}
 	if (ThisEvent.EventParam=='v'){
 		// When the perfomance is done and the user presses reset
-		printf("LIFECYCLE_RESET\r\n");
-		PsuedoEvent.EventType = LIFECYCLE_RESET;
-		PostLifecycleService(PsuedoEvent);
+		printf("LIFECYCLE_RESET_ALL\r\n");
+		printf("Lifecycle: Resettting ALL services\r\n");
+		PsuedoEvent.EventType = LIFECYCLE_RESET_ALL;
+		ES_PostAll(PsuedoEvent);
+	}
+	if (ThisEvent.EventParam=='c'){
+		// When the perfomance is done and the user presses reset
+		printf("LIFECYCLE_START_WELCOME_PERFORMANCE\r\n");
+		printf("Lifecycle: Firing welcome event on all \r\n");
+		PsuedoEvent.EventType = LIFECYCLE_START_WELCOME_PERFORMANCE;
+		ES_PostAll(PsuedoEvent);
 	}
 }
-

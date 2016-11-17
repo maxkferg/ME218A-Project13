@@ -297,7 +297,7 @@ typedef enum {  ES_NO_EVENT = 0,
 								LIFECYCLE_WELCOME_COMPLETE,
 								LIFECYCLE_INACTIVITY_RESET,
 								LIFECYCLE_PASSAGE_OF_TIME_COMPLETE,
-								LIFECYCLE_RESET,
+								LIFECYCLE_RESET_ALL
 } ES_EventTyp_t;
 
 /****************************************************************************/
@@ -336,7 +336,7 @@ typedef enum {  ES_NO_EVENT = 0,
 
 /****************************************************************************/
 // This is the list of event checking functions
-#define EVENT_CHECK_LIST Check4Keystroke
+#define EVENT_CHECK_LIST Check4Keystroke,Check4LEDService
 
 
 

@@ -26,6 +26,7 @@
 #include "ES_ServiceHeaders.h"
 #include "ES_Port.h"
 #include "EventCheckers.h"
+#include "LEDService.h"
 
 /*******************************************************************g*********
  Function
@@ -63,3 +64,11 @@ bool Check4Keystroke(void)
   }
   return false;
 }
+
+
+bool Check4LEDService(void)
+{
+	return CheckLEDEvents();
+}
+
+

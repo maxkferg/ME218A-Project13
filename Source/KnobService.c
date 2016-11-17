@@ -140,8 +140,6 @@ ES_Event RunKnobService( ES_Event ThisEvent )
 {
   ES_Event ReturnEvent;
   ReturnEvent.EventType = ES_NO_EVENT; // assume no errors
-	
-	printf("in run Knob function\n\r");
 
 	if(ThisEvent.EventType == CHANGE_KNOB_VIBRATION){//pwm channel 7
 		uint32_t Voltage = ThisEvent.EventParam;

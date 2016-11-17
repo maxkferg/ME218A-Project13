@@ -12,8 +12,8 @@
 // State definitions
 typedef enum { 
 	InitLED,
-	Welcome,
-	Waiting4ADC
+	LEDWelcomeMode,
+	LEDWaiting4ADC
 } LEDMode_t ;
 
 // Public Function Prototypes
