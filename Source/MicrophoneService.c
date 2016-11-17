@@ -29,7 +29,7 @@
 #include "ES_Framework.h"
 #include "ES_DeferRecall.h"
 #include "ES_ShortTimer.h"
-#include "ADMulti.h"
+
 
 #include "inc/hw_memmap.h"
 #include "inc/hw_types.h"
@@ -42,11 +42,14 @@
 // Bit definitions
 #include "ALL_BITS.h"
 
-// Includes for Fourier Mathc
+// Includes for Fourier Math
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdint.h>
 #include <math.h>
 #include "kiss_fft.h"
+
+#include "ADMulti.h"
 
 // Include services we need to post to
 #include "WatertubeService.h"
@@ -66,7 +69,7 @@
 
 #define N 32
 #define MICROPHONE_PIN 0 
-#define clrScrn() printf("\x1b[2J")
+#define SAMPLING_PERIOD 100 // 100 microseconds -> 8000Hz
 
 
 /*---------------------------- Module Functions ---------------------------*/
@@ -98,7 +101,7 @@ static uint8_t CurrentState;
 // After performing the fourier transform we are left with N FourierOutput values
 static kiss_fft_cpx AudioBuffer[N];
 static kiss_fft_cpx FourierOutput[N];
-static float AverageBuffer[N];
+static uint8_t AverageBuffer[N];
 
 /*------------------------------ Module Code ------------------------------*/
 /****************************************************************************
@@ -128,12 +131,11 @@ bool InitMicrophoneService( uint8_t Priority )
 	
 	ADC_MultiInit(4);
 
-	RunFFTTest();
-	
-	// TODO: Initialize the port on the tiva
+	// Run a quick test to make sure the FFT logic works correctly
+	//RunFFTTest();
 
 	// Set up the short timer for inter-command timings
-  ES_ShortTimerInit(MyPriority, SHORT_TIMER_UNUSED );
+  ES_ShortTimerInit(MyPriority, SHORT_TIMER_UNUSED);
 
   // Post the initial transition event
   ThisEvent.EventType = ES_INIT;
@@ -166,59 +168,6 @@ bool PostMicrophoneService( ES_Event ThisEvent )
 }
 
 
-/*********************************************************************
- Function
-   CheckMicrophoneEvents
-
- Description
-   An event checker for incoming Morse code messages
-   Returns a MORSE_HI_EVENT when the input goes HI and
-   a MORSE_LO_EVENT when the input goes LO.
-
-**********************************************************************/
-bool CheckMicrophoneEvents(void)
-{
-	uint32_t ADInput[4];
-	uint32_t CurrentInputStatus;
-	ES_Event CurrentEvent;
-	static uint32_t FrequencyCounter;
-	float intensity = 0;
-	bool isEvent = false;
-	
-	// Read the microphoine port
-	ADC_MultiRead(ADInput);
-
-	// Check the value on the port
-	CurrentInputStatus = ADInput[MICROPHONE_PIN]; 
-	
-	// Increase the count
-	FrequencyCounter+=1;
-	
-	// Normalize to [0, 1]
-	intensity = (float)CurrentInputStatus;
-	intensity = (intensity/4096);
-
-	// Push the new value to the audio buffer 
-	PushAudioBuffer(intensity);
-	
-	if ( FrequencyCounter % 1000 == 0 ){
-		printf(".");
-		PerformFFT();
-		PushAverageBuffer();
-  }
-	
-	if ( FrequencyCounter % 18000 == 0 ){
-		FrequencyCounter = 0;
-		printf("\r\nLast input was %i\r\n",CurrentInputStatus);
-		CurrentEvent.EventType = NEW_SOUND_RECORDED;
-		CurrentEvent.EventParam = 0;
-		PostMicrophoneService(CurrentEvent);
-		isEvent = true;
-  }
-	return isEvent;
-}
-
-
 /****************************************************************************
  Function
     RunMicrophoneService
@@ -232,79 +181,140 @@ bool CheckMicrophoneEvents(void)
 ES_Event RunMicrophoneService( ES_Event ThisEvent )
 {
 	float Sensitivity = 10.0;
-  ES_Event WaterTubeEvent;
-	
+	ES_Event WaterTubeEvent;
 	ES_Event ReturnEvent;
   ReturnEvent.EventType = ES_NO_EVENT;
-	//printf("Microphone service got sound\r\n");
-
-	switch (CurrentState){
-		
+	uint32_t ADInput[4];
+	static uint8_t SampleCounter;
+	static uint8_t FourierCounter;
+	float intensity = 0;	
+	
+	switch(CurrentState){
 		case MicrophoneInitState:
-			printf("Microphone: InitMState\r\n");
-			CurrentState = MicrophoneFourierState;
-		break;
+			// This state prepares everythin for sampling
+		  // Start the first timer and move to the MicrophoneWaitForSample state 
+			printf("Microphone: Setting the first Timer\r\n");
+			CurrentState = MicrophoneWaitForSample;
+			ES_ShortTimerStart(TIMER_A,SAMPLING_PERIOD);
+			printf("Microphone: Set the first Timer\r\n");
+			break;
 
+		case MicrophoneWaitForSample:
+			// In this state we are waiting to take another sample
+			// We stay in this state whenever possible to maximize sampling rate
+			// If this is a Timout we sample again
+			if (ThisEvent.EventType==ES_SHORT_TIMEOUT){
+				// Read the microphone port
+				ADC_MultiRead(ADInput);
+
+				// Increase the count
+				SampleCounter+=1;
+
+				// Normalize to [0, 1]
+				intensity = (float)ADInput[MICROPHONE_PIN]; ;
+				intensity = (intensity/4096);
+
+				// Push the new value to the audio buffer 
+				PushAudioBuffer(intensity);
+		
+				// If we have collected 32 samples we can perform the FFT
+				// Change the state to stop collecting, and post a MICROPHONE_SOUND_RECORDED event
+				if ( SampleCounter % 32 == 0 ){
+					ES_Event CurrentEvent;
+					CurrentState = MicrophoneFourierState;
+					CurrentEvent.EventType = MICROPHONE_SOUND_RECORDED;
+					CurrentEvent.EventParam = 0;
+					PostMicrophoneService(CurrentEvent);
+					SampleCounter = 0;
+				} else{
+					// Sample again soon
+					ES_ShortTimerStart(TIMER_A,SAMPLING_PERIOD);
+				}
+			}
+			break;
+ 			
 		case MicrophoneFourierState:
-			// In this state we are pushing new fourier values
-			// printf("Microphone: Entered the WaterState\r\n");
-			if (ThisEvent.EventType==NEW_SOUND_RECORDED){
-				
+			// In this state we are calculating new fourier values
+		  // After this state we either start sampling again, or go
+		  // to the MicrophoneWaterState
+			printf(".");
+			
+			if (ThisEvent.EventType==MICROPHONE_SOUND_RECORDED){
 				// Calculate the FFT.
 				// Input will be AudioBuffer
-				// Output will be FouriererOutputs
-				// Print the audio buffer
+				// Output will be FourierOutputs
+				//PerformFFT();
+				PushAverageBuffer();
+				FourierCounter++;
+				// Decide which state to move to
+				if (FourierCounter>50){
+					// Move to the Water state
+					ES_Event CurrentEvent;
+					CurrentState = MicrophoneWaterState;
+					CurrentEvent.EventType = MICROPHONE_FOURIER_COMPLETED;
+					PostMicrophoneService(CurrentEvent);
+					FourierCounter = 0;
+				} else {
+					// Default: Move back to the sampling state
+					CurrentState = MicrophoneWaitForSample;
+					ES_ShortTimerStart(TIMER_A,SAMPLING_PERIOD);
+				}
+			}
+		break;
+		
+
+		case MicrophoneWaterState:
+			// In this state we take a break from the hard work and post 
+		  // our results. We have finished sampling and transforming at this point
+		
+			if (ThisEvent.EventType==MICROPHONE_FOURIER_COMPLETED){
 				PrintAudioBuffer();
 				PrintFourierBuffer();
-				PrintAverageBuffer();
-			
+				//PrintAverageBuffer();
+					
 				// Water tube 1
 				WaterTubeEvent.EventType = CHANGE_WATER_1;
-				//WaterTubeEvent.EventParam = GetWaterHeight(1, Sensitivity);
-				//PostWatertubeService(WaterTubeEvent);
+				WaterTubeEvent.EventParam = GetWaterHeight(1, Sensitivity);
+				PostWatertubeService(WaterTubeEvent);
 
 				// Water tube 2					
 				WaterTubeEvent.EventType = CHANGE_WATER_2;
-				//WaterTubeEvent.EventParam = GetWaterHeight(2, Sensitivity);
-				//PostWatertubeService(WaterTubeEvent);
+				WaterTubeEvent.EventParam = GetWaterHeight(2, Sensitivity);
+				PostWatertubeService(WaterTubeEvent);
 				
 				// Water tube 3
 				WaterTubeEvent.EventType = CHANGE_WATER_3;
-				//WaterTubeEvent.EventParam = GetWaterHeight(3, Sensitivity);
-				//PostWatertubeService(WaterTubeEvent);
+				WaterTubeEvent.EventParam = GetWaterHeight(3, Sensitivity);
+				PostWatertubeService(WaterTubeEvent);
 				
 				// Water tube 4
 				WaterTubeEvent.EventType = CHANGE_WATER_4;
-				//WaterTubeEvent.EventParam = GetWaterHeight(4, Sensitivity);
-				//PostWatertubeService(WaterTubeEvent);
+				WaterTubeEvent.EventParam = GetWaterHeight(4, Sensitivity);
+				PostWatertubeService(WaterTubeEvent);
 				
 				// Water tube 5
 				WaterTubeEvent.EventType = CHANGE_WATER_5;
-				//WaterTubeEvent.EventParam = GetWaterHeight(5, Sensitivity);
-				//PostWatertubeService(WaterTubeEvent);
+				WaterTubeEvent.EventParam = GetWaterHeight(5, Sensitivity);
+				PostWatertubeService(WaterTubeEvent);
 				
 				// Water tube 6
 				WaterTubeEvent.EventType = CHANGE_WATER_6;
-				//WaterTubeEvent.EventParam = GetWaterHeight(6, Sensitivity);
-				//PostWatertubeService(WaterTubeEvent);
+				WaterTubeEvent.EventParam = GetWaterHeight(6, Sensitivity);
+				PostWatertubeService(WaterTubeEvent);
 				
 				// Water tube 7
 				WaterTubeEvent.EventType = CHANGE_WATER_7;
-				//WaterTubeEvent.EventParam = GetWaterHeight(7, Sensitivity);
-				//PostWatertubeService(WaterTubeEvent);
+				WaterTubeEvent.EventParam = GetWaterHeight(7, Sensitivity);
+				PostWatertubeService(WaterTubeEvent);
 				
 				// Water tube 8
 				WaterTubeEvent.EventType = CHANGE_WATER_8;
-				//WaterTubeEvent.EventParam = GetWaterHeight(8, Sensitivity);
-				//PostWatertubeService(WaterTubeEvent);
-			} else {
-				puts("Microphone: Got some other event\r\n");
+				WaterTubeEvent.EventParam = GetWaterHeight(8, Sensitivity);
+				PostWatertubeService(WaterTubeEvent);
+				
+				// Now we are going to start sampling again
+				CurrentState = MicrophoneWaitForSample;
 			}
-		break;
-	
-		case MicrophoneResetState:
-			puts("Microphone: Entered the Reset State");
-			CurrentState = MicrophoneFourierState;
 		break;
 	}
   return ReturnEvent;
@@ -374,7 +384,7 @@ static float GetWaterHeight(uint8_t WaterTubeNumber, float Sensitivity){
 ****************************************************************************/
 static void PrintAudioBuffer(){
 	// Shift all items right by one
-	printf("A[");
+	printf("\r\nA[");
 	for (int k=0; k<N; k++){   
     printf("%.2f,",AudioBuffer[k].r);
 	}
@@ -396,6 +406,12 @@ static void PrintFourierBuffer(){
 	for (int k=0; k<N; k++){   
     printf("%.2f,",FourierOutput[k].r);
 	}
+	printf("]\r\n\r\n");
+	
+	printf("S[");
+	for (int k=1; k<(N/2); k++){   
+    printf("%.2f,",square(FourierOutput[k].r) + square(FourierOutput[k].i));
+	}
 	printf("]\r\n");
 }
 
@@ -412,7 +428,7 @@ static void PrintAverageBuffer(){
 	// Shift all items right by one
 	printf("K[");
 	for (int k=0; k<N; k++){   
-    printf("%.2f,",AverageBuffer[k]);
+    printf("%i,",AverageBuffer[k]);
 	}
 	printf("]\r\n");
 }
@@ -429,7 +445,7 @@ static void PrintAverageBuffer(){
 static void PushAudioBuffer(float newValue){
 	// Shift all items right by one
 	static uint32_t count = 0;
-	newValue = sin(0.7 * M_PI * 4 * count / N);
+	//newValue = sin(0.7 * M_PI * 4 * count / N);
 	
 	for (int k=N-1; k > 0; k--){   
     AudioBuffer[k].r = AudioBuffer[k-1].r;
@@ -452,14 +468,12 @@ static void PushAudioBuffer(float newValue){
 ****************************************************************************/
 static void PushAverageBuffer(void){
 	// Shift all items right by one
-	for (int k=0; k < N; k++){   
-    AverageBuffer[k] = 0.8*AverageBuffer[k]+0.2*square(FourierOutput[k].r);
-		if (AverageBuffer[k]<0){
-			AverageBuffer[k] = 0;
-		}
-		if (AverageBuffer[k] > 100){
-			AverageBuffer[k] = 100;
-		}
+	for (int k=0; k < N; k++){  
+			float newValue = square(FourierOutput[k].r);
+			if (newValue>10){
+				newValue=10;
+			}
+			AverageBuffer[k] = 0.9*AverageBuffer[k]+10*newValue;
 	}
 }
 
@@ -536,7 +550,7 @@ static void PerformFFT(void){
 		Run the FFT tests
 ****************************************************************************/
 static void RunFFTTest(void){
-	
+	/*
 	printf("************************************\r\n");
 	printf("********** TESTING FFT **************\r\n");
 	printf("************************************\r\n");	
@@ -559,12 +573,13 @@ static void RunFFTTest(void){
 	printf("*********************************\r\n");
 	printf("******* AND WE'RE DONE **********\r\n");
 	printf("*********************************\r\n");	
+	*/
 }
 
 
 static void TestFft(const char* title, const kiss_fft_cpx in[N], kiss_fft_cpx out[N])
 {
-  kiss_fft_cfg cfg;
+  /*kiss_fft_cfg cfg;
 
   printf("%s\n", title);
 
@@ -585,6 +600,7 @@ static void TestFft(const char* title, const kiss_fft_cpx in[N], kiss_fft_cpx ou
   {
     printf("not enough memory?\n");
   }
+	*/
 }
 
 /****************************************************************************

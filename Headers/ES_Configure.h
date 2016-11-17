@@ -30,7 +30,7 @@
 /****************************************************************************/
 // This macro determines that nuber of services that are *actually* used in
 // a particular application. It will vary in value from 1 to MAX_NUM_SERVICES
-#define NUM_SERVICES 4
+#define NUM_SERVICES 2
 
 /****************************************************************************/
 // These are the definitions for Service 0, the lowest priority service.
@@ -67,11 +67,11 @@
 // These are the definitions for Service 2
 #if NUM_SERVICES > 2
 // the header file with the public function prototypes
-#define SERV_2_HEADER "SensitivityService.h"
+#define SERV_2_HEADER "KnobService.h"
 // the name of the Init function
-#define SERV_2_INIT InitSensitivityService
+#define SERV_2_INIT InitKnobService
 // the name of the run function
-#define SERV_2_RUN RunSensitivityService
+#define SERV_2_RUN RunKnobService
 // How big should this services Queue be?
 #define SERV_2_QUEUE_SIZE 3
 #endif
@@ -280,8 +280,20 @@ typedef enum {  ES_NO_EVENT = 0,
 								CHANGE_WATER_7,
 								CHANGE_WATER_8,
 								
+								// Knob service events
+								CHANGE_KNOB_VIBRATION,
+								
 								// Microphone Service Events
-								NEW_SOUND_RECORDED
+								MICROPHONE_SOUND_RECORDED,
+								MICROPHONE_FOURIER_COMPLETED,
+								
+								// Lifecycle Hardware initilized
+								LIFECYCLE_HARDWARE_INITALIZED,
+								LIFECYCLE_START_WELCOME_PERFORMANCE,
+								LIFECYCLE_WELCOME_COMPLETE,
+								LIFECYCLE_INACTIVITY_RESET,
+								LIFECYCLE_PASSAGE_OF_TIME_COMPLETE,
+								LIFECYCLE_RESET,
 } ES_EventTyp_t;
 
 /****************************************************************************/
@@ -320,8 +332,8 @@ typedef enum {  ES_NO_EVENT = 0,
 
 /****************************************************************************/
 // This is the list of event checking functions
-#define EVENT_CHECK_LIST Check4Keystroke,ES_CheckMicrophone
-//#define EVENT_CHECK_LIST Check4Morse
+#define EVENT_CHECK_LIST Check4Keystroke
+
 
 
 /****************************************************************************/
@@ -331,9 +343,9 @@ typedef enum {  ES_NO_EVENT = 0,
 // Unlike services, any combination of timers may be used and there is no
 // priority in servicing them
 #define TIMER_UNUSED ((pPostFunc)0)
-#define TIMER0_RESP_FUNC TIMER_UNUSED
-#define TIMER1_RESP_FUNC TIMER_UNUSED
-#define TIMER2_RESP_FUNC TIMER_UNUSED
+#define TIMER0_RESP_FUNC PostMicrophoneService
+#define TIMER1_RESP_FUNC PostMicrophoneService
+#define TIMER2_RESP_FUNC PostLifecycleService
 #define TIMER3_RESP_FUNC TIMER_UNUSED
 #define TIMER4_RESP_FUNC TIMER_UNUSED
 #define TIMER5_RESP_FUNC TIMER_UNUSED
@@ -355,8 +367,9 @@ typedef enum {  ES_NO_EVENT = 0,
 // the timer number matches where the timer event will be routed
 // These symbolic names should be changed to be relevant to your application
 
-#define LCD_PUMP_TIMER 1
+#define PASSAGE_OF_TIME_TIMER 3
 #define BUTTON_TIMER 14
 #define SERVICE0_TIMER 15
+#define KNOB_TIMER 13
 
 #endif /* CONFIGURE_H */

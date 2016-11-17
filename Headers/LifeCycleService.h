@@ -16,14 +16,15 @@
 // State definitions for use with the query function
 typedef enum { InitPState,
 							 WelcomeState,
-               MainState,
-               FinalState
+               WaitingState,
+               FinaleState
 } LifecycleState_t ;
 
 // Public Function Prototypes
 bool InitLifecycleService ( uint8_t Priority );
 bool PostLifecycleService ( ES_Event ThisEvent );
 ES_Event RunLifecycleService ( ES_Event ThisEvent );
+void PostLifecycleEventGenerator( ES_Event ThisEvent );
 
 
 #endif /* LifecycleService_H */

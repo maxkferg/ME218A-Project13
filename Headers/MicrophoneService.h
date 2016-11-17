@@ -20,8 +20,9 @@ bool CheckMicrophoneEvents( void );
 ES_Event RunMicrophoneService( ES_Event ThisEvent );
 
 typedef enum { MicrophoneInitState,
+							 MicrophoneWaitForSample,
 							 MicrophoneFourierState,
-							 MicrophoneResetState
+	             MicrophoneWaterState
 } MicrophoneState_t ;
 
 

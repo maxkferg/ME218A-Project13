@@ -31,8 +31,12 @@
 #include "driverlib/pin_map.h"	// Define PART_TM4C123GH6PM in project
 #include "driverlib/gpio.h"
 
-// Header for this file
+// Header for this file and others
 #include "LifecycleService.h"
+#include "WatertubeService.h"
+#include "MicrophoneService.h"
+#include "KnobService.h"
+#include "LEDService.h"
 
 
 /*----------------------------- Module Defines ----------------------------*/
@@ -57,6 +61,9 @@ static uint8_t MyPriority;
 // Keep track of the current state
 static LifecycleState_t CurrentState;
 
+// Keep track of passage of time
+static uint8_t PassageOfTime;
+
 
 /*------------------------------ Module Code ------------------------------*/
 /****************************************************************************
@@ -80,6 +87,9 @@ bool InitLifecycleService( uint8_t Priority )
   MyPriority = Priority;
 
 	CurrentState = InitPState;
+	
+	// Initialize our passage of Time timer
+	ES_Timer_InitTimer(PASSAGE_OF_TIME_TIMER,ONE_SEC);
 	
   // Post the initial transition event
 	// puts("Posting transition event\r\n");
@@ -110,6 +120,10 @@ bool PostLifecycleService( ES_Event ThisEvent )
   return ES_PostToService( MyPriority, ThisEvent);
 }
 
+
+
+
+
 /****************************************************************************
  Function
     RunLifecycleService
@@ -123,27 +137,197 @@ bool PostLifecycleService( ES_Event ThisEvent )
 ES_Event RunLifecycleService( ES_Event ThisEvent )
 {
   ES_Event ReturnEvent;
+	ES_Event PostingEvent;
   ReturnEvent.EventType = ES_NO_EVENT;
+	PostingEvent.EventType = ES_NO_EVENT;
 
 	switch (CurrentState){
 		case InitPState:
-			printf("Lifecycle: InitPState\r\n");
+			if (ThisEvent.EventType==LIFECYCLE_HARDWARE_INITALIZED){
+				printf("Lifecycle: Hardeware Initialized. Moving all services to Welcome State\r\n");
+				printf("Lifecycle: Asking all services to perform Welcome Performance\r\n");
+				PostingEvent.EventType = LIFECYCLE_START_WELCOME_PERFORMANCE;
+				PostWatertubeService(PostingEvent);
+				PostKnobService(PostingEvent);
+				PostLEDService(PostingEvent);
+				CurrentState = WelcomeState;
+			} else {
+				printf("Lifecycle: In Psuedo Init State\r\n");
+				printf("Lifecycle: All hardware has been initialized\r\n");
+				printf("Lifecycle: Press H to enter the Welcome State (Fire hardware initilized)\r\n");
+			}
 		break;
-
+		
 		case WelcomeState:
-			printf("Lifecycle: WelcomeState\r\n");
+			printf("Lifecycle: In Welcome State. Press j to skip to waiting state\r\n");
+			if (ThisEvent.EventType==LIFECYCLE_WELCOME_COMPLETE){
+				printf("Lifecycle: Moving to Waiting State\r\n");
+				CurrentState = WaitingState;
+			}
 		break;
 	
-		case MainState:
-			printf("Lifecycle: MainState\r\n");
+		case WaitingState:
+			printf("Lifecycle: WaitingState\r\n");
+		  printf("All sensors are sampling\r\n");
+			if (ThisEvent.EventType==ES_TIMEOUT){
+				PassageOfTime += 1;
+				printf("Lifecycle: Passage of time at %i seconds\r\n",PassageOfTime);
+				printf("Lifecycle: Press 't' to trigger finale (passage_of_time_complete)\r\n");
+				printf("Lifecycle: Press 'i' to trigger reset due to inactivity\r\n");
+			}
+			if (ThisEvent.EventType==LIFECYCLE_PASSAGE_OF_TIME_COMPLETE){
+				printf("Lifecycle: Moving to Finale State");
+				CurrentState = FinaleState;
+				PostLifecycleService(ThisEvent);
+			}
+			if (ThisEvent.EventType==LIFECYCLE_INACTIVITY_RESET){
+				printf("Lifecycle: Moving to Finale State");
+				CurrentState = FinaleState;
+				PostLifecycleService(ThisEvent);
+			}
 		break;
 	
-		case FinalState:
+		case FinaleState:
 			printf("Lifecycle: FinalState\r\n");
+			printf("Press 'r' to reset");
+			if (ThisEvent.EventType==LIFECYCLE_RESET){
+				printf("Lifecycle: Moving to welcome State");
+				CurrentState = WelcomeState;
+				PostLifecycleService(ThisEvent);
+			}
 		break;
 	}
 
   return ReturnEvent;
 }
 
+
+
+
+/****************************************************************************
+ Function
+     PostLifecycleEventGenerator
+
+ Parameters
+     EF_Event ThisEvent. A keypress event to convert to a ES_EVENT
+ Returns
+     void
+
+ Description
+     Posts an event to the relevant state machine
+****************************************************************************/
+void PostLifecycleEventGenerator( ES_Event ThisEvent ){
+	ES_Event PsuedoEvent;
+	// Tube empty events (keys 1-7)
+	if (ThisEvent.EventParam==1){
+		printf("CHANGE_WATER_1 with value 0");
+		PsuedoEvent.EventType = CHANGE_WATER_1;
+		PsuedoEvent.EventParam = 0;	
+		PostWatertubeService(PsuedoEvent);
+	}
+	if (ThisEvent.EventParam==2){
+		printf("CHANGE_WATER_2 with value 0");
+		PsuedoEvent.EventType = CHANGE_WATER_2;
+		PsuedoEvent.EventParam = 0;	
+		PostWatertubeService(PsuedoEvent);
+	}
+		if (ThisEvent.EventParam==3){
+		printf("CHANGE_WATER_3 with value 0");
+		PsuedoEvent.EventType = CHANGE_WATER_3;
+		PsuedoEvent.EventParam = 0;	
+		PostWatertubeService(PsuedoEvent);
+	}
+	if (ThisEvent.EventParam==4){
+		printf("CHANGE_WATER_4 with value 0");
+		PsuedoEvent.EventType = CHANGE_WATER_4;
+		PsuedoEvent.EventParam = 0;	
+		PostWatertubeService(PsuedoEvent);
+	}
+	if (ThisEvent.EventParam==5){
+		printf("CHANGE_WATER_5 with value 0");
+		PsuedoEvent.EventType = CHANGE_WATER_5;
+		PsuedoEvent.EventParam = 0;	
+		PostWatertubeService(PsuedoEvent);
+	}
+	if (ThisEvent.EventParam==6){
+		printf("CHANGE_WATER_6 with value 0");
+		PsuedoEvent.EventType = CHANGE_WATER_6;
+		PsuedoEvent.EventParam = 0;	
+		PostWatertubeService(PsuedoEvent);
+	}
+	if (ThisEvent.EventParam==7){
+		printf("CHANGE_WATER_7 with value 0");
+		PsuedoEvent.EventType = CHANGE_WATER_7;
+		PsuedoEvent.EventParam = 0;	
+		PostWatertubeService(PsuedoEvent);
+	}
+	// Tube fill events (q-u)
+		if (ThisEvent.EventParam=='q'){
+		printf("CHANGE_WATER_1 with value 0");
+		PsuedoEvent.EventType = CHANGE_WATER_1;
+		PsuedoEvent.EventParam = 4096;	
+		PostWatertubeService(PsuedoEvent);
+	}
+	if (ThisEvent.EventParam=='w'){
+		printf("CHANGE_WATER_2 with value 0");
+		PsuedoEvent.EventType = CHANGE_WATER_2;
+		PsuedoEvent.EventParam = 4096;	
+		PostWatertubeService(PsuedoEvent);
+	}
+	if (ThisEvent.EventParam=='e'){
+		printf("CHANGE_WATER_3 with value 0");
+		PsuedoEvent.EventType = CHANGE_WATER_3;
+		PsuedoEvent.EventParam = 4096;	
+		PostWatertubeService(PsuedoEvent);
+	}
+	if (ThisEvent.EventParam=='r'){
+		printf("CHANGE_WATER_4 with value 0");
+		PsuedoEvent.EventType = CHANGE_WATER_4;
+		PsuedoEvent.EventParam = 4096;	
+		PostWatertubeService(PsuedoEvent);
+	}
+	if (ThisEvent.EventParam=='t'){
+		printf("CHANGE_WATER_5 with value 0");
+		PsuedoEvent.EventType = CHANGE_WATER_5;
+		PsuedoEvent.EventParam = 4096;	
+		PostWatertubeService(PsuedoEvent);
+	}
+	if (ThisEvent.EventParam=='y'){
+		printf("CHANGE_WATER_6 with value 0");
+		PsuedoEvent.EventType = CHANGE_WATER_6;
+		PsuedoEvent.EventParam = 4096;	
+		PostWatertubeService(PsuedoEvent);
+	}
+	if (ThisEvent.EventParam=='u'){
+		printf("CHANGE_WATER_7 with value 0");
+		PsuedoEvent.EventType = CHANGE_WATER_7;
+		PsuedoEvent.EventParam = 4096;	
+		PostWatertubeService(PsuedoEvent);
+	}
+	// Lifecycle Events 
+	if (ThisEvent.EventParam=='h'){
+		// When all the services have been initialized
+		printf("LIFECYCLE_HARDWARE_INITALIZED"); 
+		PsuedoEvent.EventType = LIFECYCLE_HARDWARE_INITALIZED;
+		PostLifecycleService(PsuedoEvent);
+	}
+	if (ThisEvent.EventParam=='t'){\
+		// When the user is out of time
+		printf("LIFECYCLE_PASSAGE_OF_TIME_COMPLETE");
+		PsuedoEvent.EventType = LIFECYCLE_PASSAGE_OF_TIME_COMPLETE;
+		PostLifecycleService(PsuedoEvent);
+	}
+	if (ThisEvent.EventParam=='i'){
+		// When the user walks away
+		printf("LIFECYCLE_INACTIVITY_RESET");
+		PsuedoEvent.EventType = LIFECYCLE_INACTIVITY_RESET;
+		PostLifecycleService(PsuedoEvent);
+	}
+	if (ThisEvent.EventParam=='r'){
+		// When the perfomance is done and the user presses reset
+		printf("LIFECYCLE_RESET");
+		PsuedoEvent.EventType = LIFECYCLE_RESET;
+		PostLifecycleService(PsuedoEvent);
+	}
+}
 
