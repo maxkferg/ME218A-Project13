@@ -3,26 +3,22 @@
   Header file LEDService.h
 
  *********************************************************************/
-
-
 #ifndef LEDService_H
 #define LEDService_H
+#include "ES_Configure.h"
+#include "ES_Framework.h"
+#include "ES_Types.h"
 
-// Event Definitions
-#include "ES_Configure.h" /* gets us event definitions */
-#include "ES_Types.h"     /* gets bool type for returns */
-
-// typedefs for the states
-// State definitions for use with the query function
-typedef enum { LEDInitState,
-							 LEDMainState
-} LEDState_t ;
+// State definitions
+typedef enum { 
+	InitLED,
+	Welcome,
+	Waiting4ADC
+} LEDMode_t ;
 
 // Public Function Prototypes
 bool InitLEDService ( uint8_t Priority );
 bool PostLEDService( ES_Event ThisEvent );
 ES_Event RunLEDService( ES_Event ThisEvent );
-
-
-#endif /* LEDService_H */
-
+bool CheckLEDEvents(void);
+#endif 

@@ -30,7 +30,7 @@
 /****************************************************************************/
 // This macro determines that nuber of services that are *actually* used in
 // a particular application. It will vary in value from 1 to MAX_NUM_SERVICES
-#define NUM_SERVICES 4
+#define NUM_SERVICES 5
 
 /****************************************************************************/
 // These are the definitions for Service 0, the lowest priority service.
@@ -95,7 +95,7 @@
 // the header file with the public function prototypes
 #define SERV_4_HEADER "LEDService.h"
 // the name of the Init function
-#define SERV_4_INIT RunLEDService
+#define SERV_4_INIT InitLEDService
 // the name of the run function
 #define SERV_4_RUN RunLEDService
 // How big should this services Queue be?
@@ -261,15 +261,17 @@ typedef enum {  ES_NO_EVENT = 0,
                 ES_UNLOCK,
 
 								// LED Service Events
-								CHANGE_LED_1,
-								CHANGE_LED_2,
-								CHANGE_LED_3,
-								CHANGE_LED_4,
-								CHANGE_LED_5,
-								CHANGE_LED_6,
-								CHANGE_LED_7,
-								CHANGE_LED_8,
-	
+								LED_MODE_1,
+								LED_MODE_2,
+								LED_MODE_3,
+								LED_MODE_4,
+								LED_MODE_5,
+								LED_MODE_6,
+								LED_MODE_7,
+								LED_MODE_8,
+								LED_MODE_9,
+								LED_MODE_10,
+								
 								// Water tube service events
 								CHANGE_WATER_1,
 								CHANGE_WATER_2,
@@ -349,7 +351,7 @@ typedef enum {  ES_NO_EVENT = 0,
 #define TIMER1_RESP_FUNC PostMicrophoneService
 #define TIMER2_RESP_FUNC PostLifecycleService
 #define TIMER3_RESP_FUNC PostLifecycleService
-#define TIMER4_RESP_FUNC TIMER_UNUSED
+#define TIMER4_RESP_FUNC PostLEDService
 #define TIMER5_RESP_FUNC TIMER_UNUSED
 #define TIMER6_RESP_FUNC TIMER_UNUSED
 #define TIMER7_RESP_FUNC TIMER_UNUSED
@@ -371,6 +373,7 @@ typedef enum {  ES_NO_EVENT = 0,
 
 #define PASSAGE_OF_TIME_TIMER 2
 #define INACTIVITY_TIMER 3
+#define WELCOME_LED_TIMER 4
 #define BUTTON_TIMER 14
 #define SERVICE0_TIMER 15
 #define KNOB_VIBRATION_TIMER 13
