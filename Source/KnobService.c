@@ -1,21 +1,15 @@
 
 /****************************************************************************
  Module
-   TemplateService.c
+   knobService.c
 
  Revision
    1.0.1
 
  Description
-   This is a template file for implementing a simple service under the 
-   Gen2 Events and Services Framework.
-
- Notes
-
- History
- When           Who     What/Why
- -------------- ---     --------
- 01/16/12 09:58 jec      began conversion from TemplateFSM.c
+   This is a simple service controlling the vibrating knob
+	 The knob takes samples from the ADC at 100 millisecond intervals
+	 If a change is detected, the knob starts vibrating for 1 second
 ****************************************************************************/
 /*----------------------------- Include Files -----------------------------*/
 /* include header files for this state machine as well as any machines at the
@@ -49,19 +43,18 @@ static uint32_t LastADCStateKnob;
 /*------------------------------ Module Code ------------------------------*/
 /****************************************************************************
  Function
-     InitTemplateService
+     InitKnobService
 
  Parameters
-     uint8_t : the priorty of this service
+     uint8_t : the priority of this service
 
  Returns
      bool, false if error in initialization, true otherwise
 
  Description
-     Saves away the priority, and does any 
-     other required initialization for this service
- Notes
-
+     Saves away the priority
+		 Initialize the ADC
+		 Initialize the PWM
 ****************************************************************************/
 bool InitKnobService ( uint8_t Priority )
 {
@@ -70,7 +63,6 @@ bool InitKnobService ( uint8_t Priority )
 
   MyPriority = Priority;
 	
-  //
 	printf("Initializing Knob Service\n\r");
 	
 	// Initialize the Tiva for 10 PWM ports
@@ -78,9 +70,11 @@ bool InitKnobService ( uint8_t Priority )
 	PWM_TIVA_Init(10);
   
   ThisEvent.EventType = ES_INIT;
-	ES_Timer_InitTimer(KNOB_TIMER,1000);
 	LastADCStateKnob = getADCStateKnob();
 	printf("last adc state in init fcn = %u \r\n",LastADCStateKnob);
+	
+	// Intialize the VIBRATION TIMER
+	ES_Timer_InitTimer(KNOB_VIBRATION_TIMER,1000);
 	
 	// The Knob Serices uses port 8 on the Tiva ADC
 	// Initializing group four, initilizes port 7&8
@@ -147,11 +141,6 @@ ES_Event RunKnobService( ES_Event ThisEvent )
   ES_Event ReturnEvent;
   ReturnEvent.EventType = ES_NO_EVENT; // assume no errors
 	
-	
-//	ES_ShortTimerStart(TIMER_A, DelayTime);
-  /********************************************
-   in here you write your service code
-   *******************************************/
 	printf("in run Knob function\n\r");
 
 	if(ThisEvent.EventType == CHANGE_KNOB_VIBRATION){//pwm channel 7

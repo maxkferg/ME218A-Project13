@@ -88,6 +88,7 @@ static void PerformFFT(void);
 static void TestFft(const char* title, const kiss_fft_cpx in[N], kiss_fft_cpx out[N]);
 static void RunFFTTest(void);
 static float square(float b);
+static float max(float a, float b);
 
 
 /*---------------------------- Module Variables ---------------------------*/
@@ -101,7 +102,7 @@ static uint8_t CurrentState;
 // After performing the fourier transform we are left with N FourierOutput values
 static kiss_fft_cpx AudioBuffer[N];
 static kiss_fft_cpx FourierOutput[N];
-static uint8_t AverageBuffer[N];
+static float AverageBuffer[N/2];
 
 /*------------------------------ Module Code ------------------------------*/
 /****************************************************************************
@@ -192,17 +193,25 @@ ES_Event RunMicrophoneService( ES_Event ThisEvent )
 	switch(CurrentState){
 		case MicrophoneInitState:
 			// This state prepares everythin for sampling
-		  // Start the first timer and move to the MicrophoneWaitForSample state 
-			printf("Microphone: Setting the first Timer\r\n");
-			CurrentState = MicrophoneWaitForSample;
-			ES_ShortTimerStart(TIMER_A,SAMPLING_PERIOD);
-			printf("Microphone: Set the first Timer\r\n");
+			// We wait for the MICROPHONE_START event before starting
+			if (ThisEvent.EventType==MICROPHONE_START){
+				printf("Microphone: Enagaging the Microphone\r\n");
+				CurrentState = MicrophoneWaitForSample;
+				ES_ShortTimerStart(TIMER_A,SAMPLING_PERIOD);
+			} else {
+				printf("Microphone: Waiting for start command\r\n");
+				printf("Microphone: Press 'm' to start and then 'n' to stop\r\n");
+			}		
 			break;
 
 		case MicrophoneWaitForSample:
 			// In this state we are waiting to take another sample
 			// We stay in this state whenever possible to maximize sampling rate
 			// If this is a Timout we sample again
+			if (ThisEvent.EventType==MICROPHONE_STOP){
+				CurrentState = MicrophoneWaitForSample;
+				PostMicrophoneService(ThisEvent);
+			}
 			if (ThisEvent.EventType==ES_SHORT_TIMEOUT){
 				// Read the microphone port
 				ADC_MultiRead(ADInput);
@@ -243,7 +252,7 @@ ES_Event RunMicrophoneService( ES_Event ThisEvent )
 				// Calculate the FFT.
 				// Input will be AudioBuffer
 				// Output will be FourierOutputs
-				//PerformFFT();
+				PerformFFT();
 				PushAverageBuffer();
 				FourierCounter++;
 				// Decide which state to move to
@@ -270,7 +279,7 @@ ES_Event RunMicrophoneService( ES_Event ThisEvent )
 			if (ThisEvent.EventType==MICROPHONE_FOURIER_COMPLETED){
 				PrintAudioBuffer();
 				PrintFourierBuffer();
-				//PrintAverageBuffer();
+				PrintAverageBuffer();
 					
 				// Water tube 1
 				WaterTubeEvent.EventType = CHANGE_WATER_1;
@@ -307,13 +316,9 @@ ES_Event RunMicrophoneService( ES_Event ThisEvent )
 				WaterTubeEvent.EventParam = GetWaterHeight(7, Sensitivity);
 				PostWatertubeService(WaterTubeEvent);
 				
-				// Water tube 8
-				WaterTubeEvent.EventType = CHANGE_WATER_8;
-				WaterTubeEvent.EventParam = GetWaterHeight(8, Sensitivity);
-				PostWatertubeService(WaterTubeEvent);
-				
 				// Now we are going to start sampling again
-				CurrentState = MicrophoneWaitForSample;
+				printf("Microphone sample complete\r\n");
+				CurrentState = MicrophoneInitState;
 			}
 		break;
 	}
@@ -365,9 +370,6 @@ static float GetWaterHeight(uint8_t WaterTubeNumber, float Sensitivity){
 		// Water tube 7
 		case 7:
 			return Sensitivity*(SumFourierOutputs(600,700));
-		// Water tube 8
-		case 8:
-			return Sensitivity*(SumFourierOutputs(700,N));
 	}
 	printf("Unknown tube %i",WaterTubeNumber);
 	return 0;
@@ -426,9 +428,9 @@ static void PrintFourierBuffer(){
 ****************************************************************************/
 static void PrintAverageBuffer(){
 	// Shift all items right by one
-	printf("K[");
-	for (int k=0; k<N; k++){   
-    printf("%i,",AverageBuffer[k]);
+	printf("X[");
+	for (int k=0; k<N/2; k++){   
+    printf("%i,",(int)AverageBuffer[k]);
 	}
 	printf("]\r\n");
 }
@@ -463,20 +465,31 @@ static void PushAudioBuffer(float newValue){
     PushAverageBuffer
 
 	Description
-		Push a single value to the audio buffer
-	  The last value in the buffer will be discarded
+		Copy the Fourier magnitudes over to the Average Buffer
+		Normalize the AverageBuffer so that the maximum value is 100
 ****************************************************************************/
 static void PushAverageBuffer(void){
-	// Shift all items right by one
-	for (int k=0; k < N; k++){  
-			float newValue = square(FourierOutput[k].r);
-			if (newValue>10){
-				newValue=10;
+	float squared = 0;
+	float maximum = 0;
+	// Add the squared magnitude onto the buffer [float math]
+	for (int k=1; k < N/2; k++){  
+			squared = square(FourierOutput[k].r) + square(FourierOutput[k].i);
+			if (squared<0 || squared>1000){
+				squared = 0;
 			}
-			AverageBuffer[k] = 0.9*AverageBuffer[k]+10*newValue;
+		  AverageBuffer[k] += squared;
+	}
+	// Find the maxumim value [float math]
+	for (int k=1; k < N/2; k++){  
+			maximum = max(maximum,AverageBuffer[k]);
+	}
+	
+	// Normalize everything to 100 [float math]
+	for (int k=1; k < N/2; k++){  
+			//printf("%i: 100*%f/%f = %f\r\n",k,AverageBuffer[k],maximum,100*AverageBuffer[k]/maximum);
+			AverageBuffer[k] = 128*AverageBuffer[k]/maximum;
 	}
 }
-
 
 
 
@@ -550,7 +563,6 @@ static void PerformFFT(void){
 		Run the FFT tests
 ****************************************************************************/
 static void RunFFTTest(void){
-	/*
 	printf("************************************\r\n");
 	printf("********** TESTING FFT **************\r\n");
 	printf("************************************\r\n");	
@@ -573,13 +585,12 @@ static void RunFFTTest(void){
 	printf("*********************************\r\n");
 	printf("******* AND WE'RE DONE **********\r\n");
 	printf("*********************************\r\n");	
-	*/
 }
 
 
 static void TestFft(const char* title, const kiss_fft_cpx in[N], kiss_fft_cpx out[N])
 {
-  /*kiss_fft_cfg cfg;
+  kiss_fft_cfg cfg;
 
   printf("%s\n", title);
 
@@ -600,7 +611,6 @@ static void TestFft(const char* title, const kiss_fft_cpx in[N], kiss_fft_cpx ou
   {
     printf("not enough memory?\n");
   }
-	*/
 }
 
 /****************************************************************************
@@ -614,6 +624,26 @@ float square(float b)
 {
     return b*b;
 }
+
+
+/****************************************************************************
+ Function
+    Max
+
+	Description
+		Return the maximum of two floats
+****************************************************************************/
+static float max(float a, float b)
+{
+	if (a>b){
+		return a;
+	} else {
+		return b;
+	}
+}
+
+
+
 
 
 

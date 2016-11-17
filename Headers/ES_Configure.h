@@ -30,14 +30,14 @@
 /****************************************************************************/
 // This macro determines that nuber of services that are *actually* used in
 // a particular application. It will vary in value from 1 to MAX_NUM_SERVICES
-#define NUM_SERVICES 2
+#define NUM_SERVICES 4
 
 /****************************************************************************/
 // These are the definitions for Service 0, the lowest priority service.
 // Every Events and Services application must have a Service 0. Further 
 // services are added in numeric sequence (1,2,3,...) with increasing 
 // priorities
-// the header file with the public function prototypes
+// the header file with the publmic function prototypes
 #define SERV_0_HEADER "LifecycleService.h"
 // the name of the Init function
 #define SERV_0_INIT InitLifecycleService
@@ -86,7 +86,7 @@
 // the name of the run function
 #define SERV_3_RUN RunWatertubeService
 // How big should this services Queue be?
-#define SERV_3_QUEUE_SIZE 3
+#define SERV_3_QUEUE_SIZE 8
 #endif
 
 /****************************************************************************/
@@ -286,6 +286,8 @@ typedef enum {  ES_NO_EVENT = 0,
 								// Microphone Service Events
 								MICROPHONE_SOUND_RECORDED,
 								MICROPHONE_FOURIER_COMPLETED,
+								MICROPHONE_START,
+								MICROPHONE_STOP,
 								
 								// Lifecycle Hardware initilized
 								LIFECYCLE_HARDWARE_INITALIZED,
@@ -346,7 +348,7 @@ typedef enum {  ES_NO_EVENT = 0,
 #define TIMER0_RESP_FUNC PostMicrophoneService
 #define TIMER1_RESP_FUNC PostMicrophoneService
 #define TIMER2_RESP_FUNC PostLifecycleService
-#define TIMER3_RESP_FUNC TIMER_UNUSED
+#define TIMER3_RESP_FUNC PostLifecycleService
 #define TIMER4_RESP_FUNC TIMER_UNUSED
 #define TIMER5_RESP_FUNC TIMER_UNUSED
 #define TIMER6_RESP_FUNC TIMER_UNUSED
@@ -367,9 +369,10 @@ typedef enum {  ES_NO_EVENT = 0,
 // the timer number matches where the timer event will be routed
 // These symbolic names should be changed to be relevant to your application
 
-#define PASSAGE_OF_TIME_TIMER 3
+#define PASSAGE_OF_TIME_TIMER 2
+#define INACTIVITY_TIMER 3
 #define BUTTON_TIMER 14
 #define SERVICE0_TIMER 15
-#define KNOB_TIMER 13
+#define KNOB_VIBRATION_TIMER 13
 
 #endif /* CONFIGURE_H */

@@ -45,6 +45,9 @@
 #define HALF_SEC (ONE_SEC/2)
 #define TWO_SEC (ONE_SEC*2)
 
+#define INACTIVITY_LENGTH 30
+#define PASSAGE_OF_TIME_LENGTH 45
+
 // Define helpers
 #define clrScrn() printf("\x1b[2J")
 #define goHome()	printf("\x1b[1,1H")
@@ -89,7 +92,10 @@ bool InitLifecycleService( uint8_t Priority )
 	CurrentState = InitPState;
 	
 	// Initialize our passage of Time timer
-	ES_Timer_InitTimer(PASSAGE_OF_TIME_TIMER,ONE_SEC);
+	ES_Timer_InitTimer(PASSAGE_OF_TIME_TIMER,TWO_SEC);
+
+	// Initialize our inactivity timer
+	ES_Timer_InitTimer(INACTIVITY_TIMER,ONE_SEC);
 	
   // Post the initial transition event
 	// puts("Posting transition event\r\n");
@@ -144,7 +150,7 @@ ES_Event RunLifecycleService( ES_Event ThisEvent )
 	switch (CurrentState){
 		case InitPState:
 			if (ThisEvent.EventType==LIFECYCLE_HARDWARE_INITALIZED){
-				printf("Lifecycle: Hardeware Initialized. Moving all services to Welcome State\r\n");
+				// All the hardware is initialized. We can move to the welcome state
 				printf("Lifecycle: Asking all services to perform Welcome Performance\r\n");
 				PostingEvent.EventType = LIFECYCLE_START_WELCOME_PERFORMANCE;
 				PostWatertubeService(PostingEvent);
@@ -152,48 +158,84 @@ ES_Event RunLifecycleService( ES_Event ThisEvent )
 				PostLEDService(PostingEvent);
 				CurrentState = WelcomeState;
 			} else {
+				// Catch unhandled events
 				printf("Lifecycle: In Psuedo Init State\r\n");
 				printf("Lifecycle: All hardware has been initialized\r\n");
-				printf("Lifecycle: Press H to enter the Welcome State (Fire hardware initilized)\r\n");
+				printf("Lifecycle: Press 'h' to enter the Welcome State (Fire hardware initilized)\r\n\r\n");
 			}
 		break;
 		
 		case WelcomeState:
-			printf("Lifecycle: In Welcome State. Press j to skip to waiting state\r\n");
 			if (ThisEvent.EventType==LIFECYCLE_WELCOME_COMPLETE){
-				printf("Lifecycle: Moving to Waiting State\r\n");
+				printf("\r\nLifecycle: Moving to Waiting State\r\n");
+				printf("Lifecycle: Starting the passage of time timer\r\n");
+				printf("Lifecycle: Starting the inactivity timer\r\n");
+				ES_Timer_InitTimer(PASSAGE_OF_TIME_TIMER,ONE_SEC);
+				ES_Timer_InitTimer(INACTIVITY_TIMER,ONE_SEC);
 				CurrentState = WaitingState;
+			} else {
+				// Catch other events
+				printf("Lifecycle: In Welcome State\r\n");
+				printf("Lifecycle: Press 'j' to move to WAITING\r\n");
 			}
 		break;
 	
+		// The waiting state occurs when all sensors are sampling
+		// This state is left when the passage of time is complete or there is inactivity
 		case WaitingState:
-			printf("Lifecycle: WaitingState\r\n");
-		  printf("All sensors are sampling\r\n");
 			if (ThisEvent.EventType==ES_TIMEOUT){
 				PassageOfTime += 1;
-				printf("Lifecycle: Passage of time at %i seconds\r\n",PassageOfTime);
-				printf("Lifecycle: Press 't' to trigger finale (passage_of_time_complete)\r\n");
-				printf("Lifecycle: Press 'i' to trigger reset due to inactivity\r\n");
+				printf("Lifecycle [waiting]: Passage of time at %i seconds\r\n",PassageOfTime);
+				printf("Lifecycle [waiting]: Inactivity time at %i seconds\r\n",PassageOfTime);
+			
+				printf("Lifecycle [waiting]: Press '1-7' or 'q-u' to trigger servos\r\n");
+				printf("Lifecycle [waiting]: Press '8' to trigger knob vibrator\r\n");
+				printf("Lifecycle [waiting]: Press 'm' to turn on the microphone service\r\n");
+				printf("Lifecycle [waiting]: Press 'x' to trigger finale (passage_of_time_complete)\r\n");
+				printf("Lifecycle [waiting]: Press 'z' to trigger reset due to inactivity\r\n\r\n");
+				ES_Timer_InitTimer(PASSAGE_OF_TIME_TIMER,TWO_SEC); // Reset the timer
 			}
-			if (ThisEvent.EventType==LIFECYCLE_PASSAGE_OF_TIME_COMPLETE){
+			else if (ThisEvent.EventType==LIFECYCLE_PASSAGE_OF_TIME_COMPLETE){
+				// Some service told us to move to the finale
 				printf("Lifecycle: Moving to Finale State");
 				CurrentState = FinaleState;
 				PostLifecycleService(ThisEvent);
 			}
-			if (ThisEvent.EventType==LIFECYCLE_INACTIVITY_RESET){
-				printf("Lifecycle: Moving to Finale State");
+			else if (ThisEvent.EventType==LIFECYCLE_INACTIVITY_RESET){
+				// Some service told us that we have been inactive too long
+				printf("Lifecycle: Moving to Finale State\r\n");
 				CurrentState = FinaleState;
 				PostLifecycleService(ThisEvent);
+			}
+			else if (PassageOfTime>PASSAGE_OF_TIME_LENGTH){
+				// Fire a passage of time on myself
+				PostingEvent.EventType = LIFECYCLE_PASSAGE_OF_TIME_COMPLETE;
+				PostLifecycleService(PostingEvent);
+			}
+			else if (PassageOfTime>INACTIVITY_LENGTH){
+				// Fire an inactivity on myself
+				PostingEvent.EventType = LIFECYCLE_PASSAGE_OF_TIME_COMPLETE;
+				PostLifecycleService(PostingEvent);
+			}
+			else {
+				// Catch unhandled events
+				printf("\r\nLifecycle: WaitingState\r\n");
+				printf("All sensors are sampling\r\n");
 			}
 		break;
 	
 		case FinaleState:
-			printf("Lifecycle: FinalState\r\n");
-			printf("Press 'r' to reset");
 			if (ThisEvent.EventType==LIFECYCLE_RESET){
-				printf("Lifecycle: Moving to welcome State");
+				// The user asked for a reset
+				printf("\r\nLifecycle: STATE RESET\r\n");
+				printf("Lifecycle: STATE RESET\r\n");
+				printf("Lifecycle: Moving to welcome State\r\n");
 				CurrentState = WelcomeState;
 				PostLifecycleService(ThisEvent);
+			} else  {
+				// Catch other events
+				printf("Lifecycle: In FinaleState\r\n");
+				printf("Press 'v' to reset\r\n");
 			}
 		break;
 	}
@@ -218,114 +260,137 @@ ES_Event RunLifecycleService( ES_Event ThisEvent )
 ****************************************************************************/
 void PostLifecycleEventGenerator( ES_Event ThisEvent ){
 	ES_Event PsuedoEvent;
+	// Microphone events (keys 1-7)
+	if (ThisEvent.EventParam=='m'){
+		printf("MICROPHONE_START\r\n");
+		PsuedoEvent.EventType = MICROPHONE_START;
+		PostMicrophoneService(PsuedoEvent);
+	}
+	if (ThisEvent.EventParam=='n'){
+		printf("MICROPHONE_STOP\r\n");
+		PsuedoEvent.EventType = MICROPHONE_STOP;
+		PostMicrophoneService(PsuedoEvent);
+	}
 	// Tube empty events (keys 1-7)
-	if (ThisEvent.EventParam==1){
-		printf("CHANGE_WATER_1 with value 0");
+	if (ThisEvent.EventParam=='1'){
+		printf("CHANGE_WATER_1 with value 0\r\n");
 		PsuedoEvent.EventType = CHANGE_WATER_1;
 		PsuedoEvent.EventParam = 0;	
 		PostWatertubeService(PsuedoEvent);
 	}
-	if (ThisEvent.EventParam==2){
-		printf("CHANGE_WATER_2 with value 0");
+	if (ThisEvent.EventParam=='2'){
+		printf("CHANGE_WATER_2 with value 0\r\n");
 		PsuedoEvent.EventType = CHANGE_WATER_2;
 		PsuedoEvent.EventParam = 0;	
 		PostWatertubeService(PsuedoEvent);
 	}
-		if (ThisEvent.EventParam==3){
-		printf("CHANGE_WATER_3 with value 0");
+		if (ThisEvent.EventParam=='3'){
+		printf("CHANGE_WATER_3 with value 0\r\n");
 		PsuedoEvent.EventType = CHANGE_WATER_3;
 		PsuedoEvent.EventParam = 0;	
 		PostWatertubeService(PsuedoEvent);
 	}
-	if (ThisEvent.EventParam==4){
-		printf("CHANGE_WATER_4 with value 0");
+	if (ThisEvent.EventParam=='4'){
+		printf("CHANGE_WATER_4 with value 0\r\n");
 		PsuedoEvent.EventType = CHANGE_WATER_4;
 		PsuedoEvent.EventParam = 0;	
 		PostWatertubeService(PsuedoEvent);
 	}
-	if (ThisEvent.EventParam==5){
-		printf("CHANGE_WATER_5 with value 0");
+	if (ThisEvent.EventParam=='5'){
+		printf("CHANGE_WATER_5 with value 0\r\n");
 		PsuedoEvent.EventType = CHANGE_WATER_5;
 		PsuedoEvent.EventParam = 0;	
 		PostWatertubeService(PsuedoEvent);
 	}
-	if (ThisEvent.EventParam==6){
-		printf("CHANGE_WATER_6 with value 0");
+	if (ThisEvent.EventParam=='6'){
+		printf("CHANGE_WATER_6 with value 0\r\n");
 		PsuedoEvent.EventType = CHANGE_WATER_6;
 		PsuedoEvent.EventParam = 0;	
 		PostWatertubeService(PsuedoEvent);
 	}
-	if (ThisEvent.EventParam==7){
-		printf("CHANGE_WATER_7 with value 0");
+	if (ThisEvent.EventParam=='7'){
+		printf("CHANGE_WATER_7 with value 0\r\n");
 		PsuedoEvent.EventType = CHANGE_WATER_7;
 		PsuedoEvent.EventParam = 0;	
 		PostWatertubeService(PsuedoEvent);
 	}
 	// Tube fill events (q-u)
 		if (ThisEvent.EventParam=='q'){
-		printf("CHANGE_WATER_1 with value 0");
+		printf("CHANGE_WATER_1 with value 4096\r\n");
 		PsuedoEvent.EventType = CHANGE_WATER_1;
 		PsuedoEvent.EventParam = 4096;	
 		PostWatertubeService(PsuedoEvent);
 	}
 	if (ThisEvent.EventParam=='w'){
-		printf("CHANGE_WATER_2 with value 0");
+		printf("CHANGE_WATER_2 with value 4096\r\n");
 		PsuedoEvent.EventType = CHANGE_WATER_2;
 		PsuedoEvent.EventParam = 4096;	
 		PostWatertubeService(PsuedoEvent);
 	}
 	if (ThisEvent.EventParam=='e'){
-		printf("CHANGE_WATER_3 with value 0");
+		printf("CHANGE_WATER_3 with value 4096\r\n");
 		PsuedoEvent.EventType = CHANGE_WATER_3;
 		PsuedoEvent.EventParam = 4096;	
 		PostWatertubeService(PsuedoEvent);
 	}
 	if (ThisEvent.EventParam=='r'){
-		printf("CHANGE_WATER_4 with value 0");
+		printf("CHANGE_WATER_4 with value 4096\r\n");
 		PsuedoEvent.EventType = CHANGE_WATER_4;
 		PsuedoEvent.EventParam = 4096;	
 		PostWatertubeService(PsuedoEvent);
 	}
 	if (ThisEvent.EventParam=='t'){
-		printf("CHANGE_WATER_5 with value 0");
+		printf("CHANGE_WATER_5 with value 4096\r\n");
 		PsuedoEvent.EventType = CHANGE_WATER_5;
 		PsuedoEvent.EventParam = 4096;	
 		PostWatertubeService(PsuedoEvent);
 	}
 	if (ThisEvent.EventParam=='y'){
-		printf("CHANGE_WATER_6 with value 0");
+		printf("CHANGE_WATER_6 with value 4096\r\n");
 		PsuedoEvent.EventType = CHANGE_WATER_6;
 		PsuedoEvent.EventParam = 4096;	
 		PostWatertubeService(PsuedoEvent);
 	}
 	if (ThisEvent.EventParam=='u'){
-		printf("CHANGE_WATER_7 with value 0");
+		printf("CHANGE_WATER_7 with value 4096\r\n");
 		PsuedoEvent.EventType = CHANGE_WATER_7;
 		PsuedoEvent.EventParam = 4096;	
 		PostWatertubeService(PsuedoEvent);
 	}
 	// Lifecycle Events 
+	if (ThisEvent.EventParam==' '){
+		// When all the services have been initialized
+		printf("NO_EVENT\r\n"); 
+		PsuedoEvent.EventType = ES_NO_EVENT;
+		PostLifecycleService(PsuedoEvent);
+	}
 	if (ThisEvent.EventParam=='h'){
 		// When all the services have been initialized
-		printf("LIFECYCLE_HARDWARE_INITALIZED"); 
+		printf("LIFECYCLE_HARDWARE_INITALIZED\r\n"); 
 		PsuedoEvent.EventType = LIFECYCLE_HARDWARE_INITALIZED;
 		PostLifecycleService(PsuedoEvent);
 	}
-	if (ThisEvent.EventParam=='t'){\
+	if (ThisEvent.EventParam=='j'){
+		// When the user walks away
+		printf("LIFECYCLE_WELCOME_COMPLETE\r\n");
+		PsuedoEvent.EventType = LIFECYCLE_WELCOME_COMPLETE;
+		PostLifecycleService(PsuedoEvent);
+	}
+	if (ThisEvent.EventParam=='x'){\
 		// When the user is out of time
-		printf("LIFECYCLE_PASSAGE_OF_TIME_COMPLETE");
+		printf("LIFECYCLE_PASSAGE_OF_TIME_COMPLETE\r\n");
 		PsuedoEvent.EventType = LIFECYCLE_PASSAGE_OF_TIME_COMPLETE;
 		PostLifecycleService(PsuedoEvent);
 	}
-	if (ThisEvent.EventParam=='i'){
+	if (ThisEvent.EventParam=='z'){
 		// When the user walks away
-		printf("LIFECYCLE_INACTIVITY_RESET");
+		printf("LIFECYCLE_INACTIVITY_RESET\r\n");
 		PsuedoEvent.EventType = LIFECYCLE_INACTIVITY_RESET;
 		PostLifecycleService(PsuedoEvent);
 	}
-	if (ThisEvent.EventParam=='r'){
+	if (ThisEvent.EventParam=='v'){
 		// When the perfomance is done and the user presses reset
-		printf("LIFECYCLE_RESET");
+		printf("LIFECYCLE_RESET\r\n");
 		PsuedoEvent.EventType = LIFECYCLE_RESET;
 		PostLifecycleService(PsuedoEvent);
 	}

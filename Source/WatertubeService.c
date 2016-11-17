@@ -149,63 +149,61 @@ ES_Event RunWatertubeService( ES_Event ThisEvent )
 			CurrentState = WaterDisplayState;
 		break;
 
-		case WaterDisplayState:
-			puts("Watertube: Entered the WaterState\r\n");
-						
+		case WaterDisplayState:			
 			// Change the water height of tube 1
 			if( ThisEvent.EventType == CHANGE_WATER_1){
 					uint32_t Voltage = ThisEvent.EventParam;
-					printf("Got touch event CHANGE_WATER_1\n\r");
+					printf("Watertube1: CHANGE_WATER_1 %i\n\r",Voltage);
 					int PulseWidth = (Voltage*2000/4096)+1000;
-					printf("PulseWidth = %d",PulseWidth);
+					//printf("PulseWidth = %d",PulseWidth);
 					PWM_TIVA_SetPulseWidth(PulseWidth,0);
 			}
 			// Change the water height of tube 2
 			if( ThisEvent.EventType == CHANGE_WATER_2){
-						uint32_t Voltage = ThisEvent.EventParam;
-					printf("Got touch event CHANGE_WATER_2\n\r");
+					uint32_t Voltage = ThisEvent.EventParam;
+					printf("Watertube2: CHANGE_WATER_2 %i\n\r",Voltage);
 					int PulseWidth = (Voltage*2000/4096)+1000;
-					printf("PulseWidth = %d",PulseWidth);
+					//printf("PulseWidth = %d",PulseWidth);
 					PWM_TIVA_SetPulseWidth(PulseWidth,1);
 			}
 			// Change the water height of tube 3
 			if( ThisEvent.EventType == CHANGE_WATER_3){
-						uint32_t Voltage = ThisEvent.EventParam;
-					printf("Got touch event CHANGE_WATER_3\n\r");
+					uint32_t Voltage = ThisEvent.EventParam;
+					printf("Watertube3: CHANGE_WATER_3 %i\n\r",Voltage);
 					int PulseWidth = (Voltage*2000/4096)+1000;
-					printf("PulseWidth = %d",PulseWidth);
+					//printf("PulseWidth = %d",PulseWidth);
 					PWM_TIVA_SetPulseWidth(PulseWidth,2);
 			}
 			// Change the water height of tube 4
 			if( ThisEvent.EventType == CHANGE_WATER_4){
 						uint32_t Voltage = ThisEvent.EventParam;
-					printf("Got touch event CHANGE_WATER_4\n\r");
+					printf("Watertube4: CHANGE_WATER_4 %i\n\r",Voltage);
 					int PulseWidth = (Voltage*2000/4096)+1000;
-					printf("PulseWidth = %d",PulseWidth);
+					//printf("PulseWidth = %d",PulseWidth);
 					PWM_TIVA_SetPulseWidth(PulseWidth,3);
 			}
 			// Change the water height of tube 5
 			if( ThisEvent.EventType == CHANGE_WATER_5){
 					uint32_t Voltage = ThisEvent.EventParam;
-					printf("Got touch event CHANGE_WATER_5\n\r");
+					printf("Watertube6: CHANGE_WATER_6 %i\n\r",Voltage);
 					int PulseWidth = (Voltage*2000/4096)+1000;
-					printf("PulseWidth = %d",PulseWidth);
+					//printf("PulseWidth = %d",PulseWidth);
 					PWM_TIVA_SetPulseWidth(PulseWidth,4);
 			}
 			// Change the water height of tube 6
 			if( ThisEvent.EventType == CHANGE_WATER_6){
 					uint32_t Voltage = ThisEvent.EventParam;
-					printf("Got touch event CHANGE_WATER_6\n\r");
+					printf("Watertube6: CHANGE_WATER_6 %i\n\r",Voltage);
 					int PulseWidth = (Voltage*2000/4096)+1000;
-					printf("PulseWidth = %d",PulseWidth);
+					//printf("PulseWidth = %d",PulseWidth);
 					PWM_TIVA_SetPulseWidth(PulseWidth,5);
 			}
 			// Change the water height of tube 7
 			if( ThisEvent.EventType == CHANGE_WATER_7){
 					uint32_t Voltage = ThisEvent.EventParam;
-					printf("Got touch event CHANGE_WATER_7\n\r");
+					printf("Watertube7: CHANGE_WATER_7 %i\n\r",Voltage);
 					int PulseWidth = (Voltage*2000/4096)+1000;
-					printf("PulseWidth = %d",PulseWidth);
+					//printf("PulseWidth = %d",PulseWidth);
 					PWM_TIVA_SetPulseWidth(PulseWidth,6);
 			}
 		break;

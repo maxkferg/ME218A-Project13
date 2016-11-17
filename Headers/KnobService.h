@@ -12,6 +12,7 @@
 #include "ES_Configure.h" /* gets us event definitions */
 #include "ES_Types.h"     /* gets bool type for returns */
 #include "ES_Framework.h"
+#include "PWM10Tiva.h"
 
 
 // Public Function Prototypes
