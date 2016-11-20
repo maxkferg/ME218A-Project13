@@ -24,6 +24,7 @@
 bool Check4Keystroke(void);
 bool Check4Morse(void);
 bool Check4Button(void);
+bool Check4Knob(void);
 bool Check4LEDService(void);
 bool ES_CheckMicrophone(void);
 

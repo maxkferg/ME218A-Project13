@@ -161,7 +161,7 @@ uint32_t getADCStateKnob(void) {
 	uint32_t ADInput[4];
 	uint32_t CurrentInputKnob;
 	ADC_MultiRead(ADInput);
-	CurrentInputKnob = ADInput[0]; // Get ADC data from PE0
+	CurrentInputKnob = ADInput[2]; // Get ADC data from PE0
 	//printf("Current Knob Input is %u.\r\n", CurrentInputKnob);
 	return CurrentInputKnob;
 }

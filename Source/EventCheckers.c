@@ -27,6 +27,7 @@
 #include "ES_Port.h"
 #include "EventCheckers.h"
 #include "LEDService.h"
+#include "KnobService.h"
 
 /*******************************************************************g*********
  Function
@@ -72,3 +73,7 @@ bool Check4LEDService(void)
 }
 
 
+bool Check4Knob(void)
+{
+	return CheckKnobEvents();
+}

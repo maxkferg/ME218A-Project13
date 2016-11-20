@@ -153,7 +153,7 @@ bool CheckLEDEvents(void) {
 	//printf("CurrentADCState: %u, LastADCState = %u\r\n", CurrentADCState, LastADCState);
 	
 	//If the CurrentButtonState is different from the LastButtonState
-	if ((diff >=100) && (CurrentMode == LEDWaiting4ADC)) {
+	if ((diff >=300) && (CurrentMode == LEDWaiting4ADC)) {
 		ReturnVal = true;
 		double  ADCRange = CurrentADCState / 4096.00;
 		if (ADCRange <= 0.10) {

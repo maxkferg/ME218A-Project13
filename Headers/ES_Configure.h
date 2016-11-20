@@ -336,7 +336,7 @@ typedef enum {  ES_NO_EVENT = 0,
 
 /****************************************************************************/
 // This is the list of event checking functions
-#define EVENT_CHECK_LIST Check4Keystroke,Check4LEDService
+#define EVENT_CHECK_LIST Check4Keystroke,Check4LEDService,Check4Knob
 
 
 

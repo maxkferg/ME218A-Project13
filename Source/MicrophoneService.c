@@ -69,7 +69,7 @@
 
 #define N 32
 #define MICROPHONE_PIN 0 
-#define SAMPLING_PERIOD 100 // 100 microseconds -> 8000Hz
+#define SAMPLING_PERIOD 120 // (120+30 overhead) microseconds -> 6000Hz
 
 
 /*---------------------------- Module Functions ---------------------------*/
@@ -320,6 +320,9 @@ ES_Event RunMicrophoneService( ES_Event ThisEvent )
 				printf("Microphone sample complete\r\n");
 				CurrentState = MicrophoneInitState;
 			}
+			// Loop back around. Start sampling again
+			CurrentState = MicrophoneWaitForSample;
+			ES_ShortTimerStart(TIMER_A,SAMPLING_PERIOD);
 		break;
 	}
   return ReturnEvent;
@@ -345,8 +348,8 @@ static float GetWaterHeight(uint8_t WaterTubeNumber, float Sensitivity){
 		// Depending on the water tube number we sum over different frequency ranges
 		// Water tube 1
 		case 1:
-			printf("Sensitivity %f",Sensitivity);
-			printf("Fourier %f",SumFourierOutputs(0,2));
+			printf("Sensitivity %f\r\n",Sensitivity);
+			printf("Fourier %f\r\n",SumFourierOutputs(0,2));
 			return Sensitivity*(SumFourierOutputs(0,2));
 	
 		// Water tube 2
@@ -430,11 +433,13 @@ static void PrintFourierBuffer(){
 ****************************************************************************/
 static void PrintAverageBuffer(){
 	// Shift all items right by one
-	printf("X[");
+	uint16_t frequency = 0;
+	printf("Current Frequencies:\r\n");
 	for (int k=0; k<N/2; k++){   
-    printf("%i,",(int)AverageBuffer[k]);
+    printf("%i : %i\r\n",frequency,(int)AverageBuffer[k]);
+		frequency = k*(2000/(N-1));
 	}
-	printf("]\r\n");
+	printf("-----------------\r\n");
 }
 
 
