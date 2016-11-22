@@ -30,7 +30,7 @@
 /****************************************************************************/
 // This macro determines that nuber of services that are *actually* used in
 // a particular application. It will vary in value from 1 to MAX_NUM_SERVICES
-#define NUM_SERVICES 5
+#define NUM_SERVICES 6
 
 /****************************************************************************/
 // These are the definitions for Service 0, the lowest priority service.
@@ -38,11 +38,11 @@
 // services are added in numeric sequence (1,2,3,...) with increasing 
 // priorities
 // the header file with the publmic function prototypes
-#define SERV_0_HEADER "LifecycleService.h"
+#define SERV_0_HEADER "KeyboardService.h"
 // the name of the Init function
-#define SERV_0_INIT InitLifecycleService
+#define SERV_0_INIT InitKeyboardService
 // the name of the run function
-#define SERV_0_RUN RunLifecycleService
+#define SERV_0_RUN RunKeyboardService
 // How big should this services Queue be?
 #define SERV_0_QUEUE_SIZE 3
 
@@ -106,11 +106,11 @@
 // These are the definitions for Service 5
 #if NUM_SERVICES > 5
 // the header file with the public function prototypes
-#define SERV_5_HEADER "TestHarnessService5.h"
+#define SERV_5_HEADER "ResetService.h"
 // the name of the Init function
-#define SERV_5_INIT InitTestHarnessService5
+#define SERV_5_INIT InitializeResetService
 // the name of the run function
-#define SERV_5_RUN RunTestHarnessService5
+#define SERV_5_RUN RunResetService
 // How big should this services Queue be?
 #define SERV_5_QUEUE_SIZE 3
 #endif
@@ -254,11 +254,8 @@ typedef enum {  ES_NO_EVENT = 0,
                 ES_INIT,   /* used to transition from initial pseudo-state */
                 ES_TIMEOUT, /* signals that the timer has expired */
                 ES_SHORT_TIMEOUT, /* signals that a short timer has expired */
-
-                ES_LCD_PUTCHAR,
+								// Example Events
                 ES_NEW_KEY,
-                ES_LOCK,
-                ES_UNLOCK,
 
 								// LED Service Events
 								LED_MODE_1,
@@ -272,7 +269,7 @@ typedef enum {  ES_NO_EVENT = 0,
 								LED_MODE_9,
 								LED_MODE_10,
 								
-								// Water tube service events
+								// Water Tube Service Events
 								CHANGE_WATER_1,
 								CHANGE_WATER_2,
 								CHANGE_WATER_3,
@@ -282,7 +279,7 @@ typedef enum {  ES_NO_EVENT = 0,
 								CHANGE_WATER_7,
 								CHANGE_WATER_8,
 								
-								// Knob service events
+								// Knob Service events
 								CHANGE_KNOB_VIBRATION,
 								
 								// Microphone Service Events
@@ -291,13 +288,18 @@ typedef enum {  ES_NO_EVENT = 0,
 								MICROPHONE_START,
 								MICROPHONE_STOP,
 								
-								// Lifecycle Hardware initilized
+								// Lifecycle Hardware Initilization
 								LIFECYCLE_HARDWARE_INITALIZED,
 								LIFECYCLE_START_WELCOME_PERFORMANCE,
 								LIFECYCLE_WELCOME_COMPLETE,
 								LIFECYCLE_INACTIVITY_RESET,
 								LIFECYCLE_PASSAGE_OF_TIME_COMPLETE,
-								LIFECYCLE_RESET_ALL
+								LIFECYCLE_RESET_ALL,
+								
+								// Reset Service Events
+								ES_RESET,
+								ES_INTERACTION,
+								ES_WELCOME_COMPLETE
 } ES_EventTyp_t;
 
 /****************************************************************************/
@@ -336,7 +338,7 @@ typedef enum {  ES_NO_EVENT = 0,
 
 /****************************************************************************/
 // This is the list of event checking functions
-#define EVENT_CHECK_LIST Check4Keystroke,Check4LEDService,Check4Knob
+#define EVENT_CHECK_LIST Check4Keystroke, Check4LEDService, Check4Knob, Check4ResetButton
 
 
 
@@ -347,10 +349,10 @@ typedef enum {  ES_NO_EVENT = 0,
 // Unlike services, any combination of timers may be used and there is no
 // priority in servicing them
 #define TIMER_UNUSED ((pPostFunc)0)
-#define TIMER0_RESP_FUNC PostMicrophoneService
-#define TIMER1_RESP_FUNC PostMicrophoneService
-#define TIMER2_RESP_FUNC PostLifecycleService
-#define TIMER3_RESP_FUNC PostLifecycleService
+#define TIMER0_RESP_FUNC PostMicrophoneService // Short timer in Mircophone Service
+#define TIMER1_RESP_FUNC PostMicrophoneService // Short timer in Mircophone Service
+#define TIMER2_RESP_FUNC PostResetService
+#define TIMER3_RESP_FUNC PostResetService
 #define TIMER4_RESP_FUNC PostLEDService
 #define TIMER5_RESP_FUNC TIMER_UNUSED
 #define TIMER6_RESP_FUNC TIMER_UNUSED
@@ -365,7 +367,7 @@ typedef enum {  ES_NO_EVENT = 0,
 #define TIMER15_RESP_FUNC TIMER_UNUSED
 
 /****************************************************************************/
-// Give the timer numbers symbolc names to make it easier to move them
+// Give the timer numbers symbolic names to make it easier to move them
 // to different timers if the need arises. Keep these definitions close to the
 // definitions for the response functions to make it easier to check that
 // the timer number matches where the timer event will be routed
@@ -374,8 +376,6 @@ typedef enum {  ES_NO_EVENT = 0,
 #define PASSAGE_OF_TIME_TIMER 2
 #define INACTIVITY_TIMER 3
 #define WELCOME_LED_TIMER 4
-#define BUTTON_TIMER 14
-#define SERVICE0_TIMER 15
-#define KNOB_VIBRATION_TIMER 13
+//#define KNOB_VIBRATION_TIMER 5
 
 #endif /* CONFIGURE_H */

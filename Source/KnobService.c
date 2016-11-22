@@ -24,6 +24,7 @@
 #include "ADMulti.h" // ADC Library
 #include "PWM10Tiva.h"
 
+#include "ResetService.h"
 #include "KnobService.h"
 
 /*----------------------------- Module Defines ----------------------------*/
@@ -74,7 +75,7 @@ bool InitKnobService ( uint8_t Priority )
 	printf("last adc state in init fcn = %u \r\n",LastADCStateKnob);
 	
 	// Intialize the VIBRATION TIMER
-	ES_Timer_InitTimer(KNOB_VIBRATION_TIMER,1000);
+	//ES_Timer_InitTimer(KNOB_VIBRATION_TIMER,1000);//Do we need this?
 	
 	// The Knob Serices uses port 8 on the Tiva ADC
 	// Initializing group four, initilizes port 7&8
@@ -113,11 +114,15 @@ bool CheckKnobEvents(void) {
 	uint32_t CurrentADCStateKnob = getADCStateKnob();
 	uint32_t diff = getADCDiffKnob(CurrentADCStateKnob, LastADCStateKnob);
 	
-	if (diff >=50){
+	if (diff >=100){
+		// Post to my own queue
 		TouchEvent.EventType=CHANGE_KNOB_VIBRATION;
 		TouchEvent.EventParam = CurrentADCStateKnob;
 		PostKnobService(TouchEvent);
-		printf("Event posted");
+		// Tell the reset service that there was interaction
+		TouchEvent.EventType = ES_INTERACTION;
+		PostResetService(TouchEvent);
+		// Prepare for next check
 		LastADCStateKnob = CurrentADCStateKnob;
 		ReturnVal = true;
 	}

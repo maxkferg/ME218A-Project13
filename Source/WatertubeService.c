@@ -154,7 +154,7 @@ ES_Event RunWatertubeService( ES_Event ThisEvent )
 		case WaterDisplayState:			
 			// Change the water height of tube 1
 			if( ThisEvent.EventType == CHANGE_WATER_1){
-					uint32_t Voltage = ThisEvent.EventParam;
+					uint16_t Voltage = ThisEvent.EventParam;
 					printf("Watertube1: CHANGE_WATER_1 %i\n\r",Voltage);
 					int PulseWidth = (Voltage*2000/4096)+1000;
 					printf("PulseWidth = %d",PulseWidth);
@@ -162,7 +162,7 @@ ES_Event RunWatertubeService( ES_Event ThisEvent )
 			}
 			// Change the water height of tube 2
 			if( ThisEvent.EventType == CHANGE_WATER_2){
-					uint32_t Voltage = ThisEvent.EventParam;
+					uint16_t Voltage = ThisEvent.EventParam;
 					printf("Watertube2: CHANGE_WATER_2 %i\n\r",Voltage);
 					int PulseWidth = (Voltage*2000/4096)+1000;
 					printf("PulseWidth = %d",PulseWidth);
@@ -170,7 +170,7 @@ ES_Event RunWatertubeService( ES_Event ThisEvent )
 			}
 			// Change the water height of tube 3
 			if( ThisEvent.EventType == CHANGE_WATER_3){
-					uint32_t Voltage = ThisEvent.EventParam;
+					uint16_t Voltage = ThisEvent.EventParam;
 					printf("Watertube3: CHANGE_WATER_3 %i\n\r",Voltage);
 					int PulseWidth = (Voltage*2000/4096)+1000;
 					//printf("PulseWidth = %d",PulseWidth);
@@ -178,7 +178,7 @@ ES_Event RunWatertubeService( ES_Event ThisEvent )
 			}
 			// Change the water height of tube 4
 			if( ThisEvent.EventType == CHANGE_WATER_4){
-						uint32_t Voltage = ThisEvent.EventParam;
+					uint16_t Voltage = ThisEvent.EventParam;
 					printf("Watertube4: CHANGE_WATER_4 %i\n\r",Voltage);
 					int PulseWidth = (Voltage*2000/4096)+1000;
 					//printf("PulseWidth = %d",PulseWidth);
@@ -186,7 +186,7 @@ ES_Event RunWatertubeService( ES_Event ThisEvent )
 			}
 			// Change the water height of tube 5
 			if( ThisEvent.EventType == CHANGE_WATER_5){
-					uint32_t Voltage = ThisEvent.EventParam;
+					uint16_t Voltage = ThisEvent.EventParam;
 					printf("Watertube6: CHANGE_WATER_6 %i\n\r",Voltage);
 					int PulseWidth = (Voltage*2000/4096)+1000;
 					//printf("PulseWidth = %d",PulseWidth);
@@ -194,7 +194,7 @@ ES_Event RunWatertubeService( ES_Event ThisEvent )
 			}
 			// Change the water height of tube 6
 			if( ThisEvent.EventType == CHANGE_WATER_6){
-					uint32_t Voltage = ThisEvent.EventParam;
+					uint16_t Voltage = ThisEvent.EventParam;
 					printf("Watertube6: CHANGE_WATER_6 %i\n\r",Voltage);
 					int PulseWidth = (Voltage*2000/4096)+1000;
 					//printf("PulseWidth = %d",PulseWidth);
@@ -202,7 +202,7 @@ ES_Event RunWatertubeService( ES_Event ThisEvent )
 			}
 			// Change the water height of tube 7
 			if( ThisEvent.EventType == CHANGE_WATER_7){
-					uint32_t Voltage = ThisEvent.EventParam;
+					uint16_t Voltage = ThisEvent.EventParam;
 					printf("Watertube7: CHANGE_WATER_7 %i\n\r",Voltage);
 					int PulseWidth = (Voltage*2000/4096)+1000;
 					//printf("PulseWidth = %d",PulseWidth);

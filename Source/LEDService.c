@@ -37,8 +37,8 @@
 #include "PWM10Tiva.h" // PWM Library
 
 // The headers from this project
-#include "LifeCycleService.h"
 #include "LEDService.h"
+#include "ResetService.h"
 
 #include "BITDEFS.H"
 
@@ -47,8 +47,11 @@
 #define LEDBits 18
 
 #define ONE_SEC 1000
+#define ONE_FIFTH_SEC (ONE_SEC/5)
+#define ONE_THIRD_SEC (ONE_SEC/3)
 #define HALF_SEC (ONE_SEC/2)
 #define TWO_SEC (ONE_SEC*2)
+#define THREE_SEC (ONE_SEC*3)
 #define FIVE_SEC (ONE_SEC*5)
 
 /*---------------------------- Module Functions ---------------------------*/
@@ -106,10 +109,12 @@ bool InitLEDService ( uint8_t Priority )
 
 	// Initialize timer for future use 
 	ES_Timer_Init(ES_Timer_RATE_1mS);
-	printf("Timer All Set.\r\n");
+	printf("Timer Initialized.\r\n");
 
 	// Set all bits to 0 initially
-  lightLED(0x00000000);
+	for (int i = 0; i < LEDBits; i++) {
+		lightLED(0x00000000);
+	}
 	printf("LEDs All Clear.\r\n");
 	
 	// Sample ADC port line PE1 and use it to initialize the LastADCState variable
@@ -120,10 +125,10 @@ bool InitLEDService ( uint8_t Priority )
   ThisEvent.EventType = ES_INIT;
   if (ES_PostToService( MyPriority, ThisEvent) == true)
   {
-      printf("LED initialization Completed.\r\n");
+      printf("LEDService initialization Completed.\r\n");
 			return true;
   } else {
-      printf("LED initialization Completed.\r\n");
+      printf("LEDService initialization Completed.\r\n");
 			return false;
   }
 }
@@ -153,49 +158,56 @@ bool CheckLEDEvents(void) {
 	//printf("CurrentADCState: %u, LastADCState = %u\r\n", CurrentADCState, LastADCState);
 	
 	//If the CurrentButtonState is different from the LastButtonState
-	if ((diff >=300) && (CurrentMode == LEDWaiting4ADC)) {
+	if (diff >=100){
+		// Tell the reset service that there was interaction
+		ThisEvent.EventType = ES_INTERACTION;
+		PostResetService(ThisEvent);
 		ReturnVal = true;
-		double  ADCRange = CurrentADCState / 4096.00;
-		if (ADCRange <= 0.10) {
-			ThisEvent.EventType = LED_MODE_1;
-			PostLEDService(ThisEvent);
-			printf("\r/*****LED MODE 01*****/\r\n");
-		} else if (ADCRange <= 0.20){ 
-			ThisEvent.EventType = LED_MODE_2;
-			PostLEDService(ThisEvent);
-			printf("\r/*****LED MODE 02*****/\r\n");
-		} else if (ADCRange <= 0.30){ 
-			ThisEvent.EventType = LED_MODE_3;
-			PostLEDService(ThisEvent);
-			printf("\r/*****LED MODE 03*****/\r\n");
-		} else if (ADCRange <= 0.40){ 
-			ThisEvent.EventType = LED_MODE_4;
-			// PostLEDService(ThisEvent);
-			printf("\r/*****LED MODE 04*****/\r\n");
-		} else if (ADCRange <= 0.50){ 
-			ThisEvent.EventType = LED_MODE_5;
-			PostLEDService(ThisEvent);
-			printf("\r/*****LED MODE 05*****/\r\n");
-		} else if (ADCRange <= 0.60){ 
-			ThisEvent.EventType = LED_MODE_6;
-			PostLEDService(ThisEvent);
-			printf("\r/*****LED MODE 06*****/\r\n");
-		} else if (ADCRange <= 0.70){ 
-			ThisEvent.EventType = LED_MODE_7;
-			PostLEDService(ThisEvent);
-			printf("\r/*****LED MODE 07*****/\r\n");
-		} else if (ADCRange <= 0.80){ 
-			ThisEvent.EventType = LED_MODE_8;
-			PostLEDService(ThisEvent);
-			printf("\r/*****LED MODE 08*****/\r\n");
-		} else if (ADCRange <= 0.90){ 
-			ThisEvent.EventType = LED_MODE_9;
-			PostLEDService(ThisEvent);
-			printf("\r/*****LED MODE 09*****/\r\n");
-		} else if (ADCRange <= 1.00){ 
-			ThisEvent.EventType = LED_MODE_10;
-			PostLEDService(ThisEvent);
-			printf("\r/*****LED MODE 10*****/\r\n");
+		
+		// Check if the LEDs are waiting for ADC
+		if (CurrentMode == LEDWaiting4ADC){
+			double  ADCRange = CurrentADCState / 4096.00;
+			if (ADCRange <= 0.10) {
+				ThisEvent.EventType = LED_MODE_1;
+				PostLEDService(ThisEvent);
+				printf("\r/*****LED MODE 01*****/\r\n");
+			} else if (ADCRange <= 0.20){ 
+				ThisEvent.EventType = LED_MODE_2;
+				PostLEDService(ThisEvent);
+				printf("\r/*****LED MODE 02*****/\r\n");
+			} else if (ADCRange <= 0.30){ 
+				ThisEvent.EventType = LED_MODE_3;
+				PostLEDService(ThisEvent);
+				printf("\r/*****LED MODE 03*****/\r\n");
+			} else if (ADCRange <= 0.40){ 
+				ThisEvent.EventType = LED_MODE_4;
+				PostLEDService(ThisEvent);
+				printf("\r/*****LED MODE 04*****/\r\n");
+			} else if (ADCRange <= 0.50){ 
+				ThisEvent.EventType = LED_MODE_5;
+				PostLEDService(ThisEvent);
+				printf("\r/*****LED MODE 05*****/\r\n");
+			} else if (ADCRange <= 0.60){ 
+				ThisEvent.EventType = LED_MODE_6;
+				PostLEDService(ThisEvent);
+				printf("\r/*****LED MODE 06*****/\r\n");
+			} else if (ADCRange <= 0.70){ 
+				ThisEvent.EventType = LED_MODE_7;
+				PostLEDService(ThisEvent);
+				printf("\r/*****LED MODE 07*****/\r\n");
+			} else if (ADCRange <= 0.80){ 
+				ThisEvent.EventType = LED_MODE_8;
+				PostLEDService(ThisEvent);
+				printf("\r/*****LED MODE 08*****/\r\n");
+			} else if (ADCRange <= 0.90){ 
+				ThisEvent.EventType = LED_MODE_9;
+				PostLEDService(ThisEvent);
+				printf("\r/*****LED MODE 09*****/\r\n");
+			} else if (ADCRange <= 1.00){ 
+				ThisEvent.EventType = LED_MODE_10;
+				PostLEDService(ThisEvent);
+				printf("\r/*****LED MODE 10*****/\r\n");
+			}
 		}
 		//Set LastADCState to the CurrentADCState
 		LastADCState = CurrentADCState;
@@ -223,19 +235,13 @@ ES_Event RunLEDService( ES_Event ThisEvent )
   switch (CurrentMode) {
 		
 		// In this state the LED is ready to rock
-		// Post LIFECYCLE_START_WELCOME_PERFORMANCE to leave this state
 		case InitLED:
 			if (ThisEvent.EventType == ES_INIT) {
-				printf("LEDService: Intialized\r\n");
-				printf("LEDService: Waiting For Instruction\r\n");
-			}
-			if (ThisEvent.EventType == LIFECYCLE_START_WELCOME_PERFORMANCE){
-				printf("LEDService: Someone asked me to start the welcome performance\r\n");
+				printf("LEDService Intialized. Starting the welcome performance.\r\n");
 				NextMode = LEDWelcomeMode;
 				BitCounter = 0;
 				WelcomeHex = 0x98334000;
-				lightLEDWelcome(WelcomeHex);	
-				//PostLEDService(ThisEvent);
+				lightLEDWelcome(WelcomeHex);
 			}
 		break;
 
@@ -243,31 +249,27 @@ ES_Event RunLEDService( ES_Event ThisEvent )
 		// When the welcome is finished post the event LIFECYCLE_WELCOME_COMPLETE to lifecycle
 		// This automatically mode automatically transitions to the LEDWaitingForADC
 	  case LEDWelcomeMode: 
-			if ((ThisEvent.EventType == ES_TIMEOUT) && (ThisEvent.EventParam == WELCOME_LED_TIMER) && (BitCounter < LEDBits)) { // EventParam is timer index 
-				// Perform another welcome step
-				BitCounter++;
-				printf("LEDService [Welcome Mode]: Shifted %d times.\r\n", BitCounter);
-				WelcomeHex = WelcomeHex << 1;
-				lightLEDWelcome(WelcomeHex);
-			} else {
-				// Welcome mode is complete
-				NextMode = LEDWaiting4ADC;
-				printf("LEDService [Welcome Mode]: Waiting for ADC data\r\n");
-				TransitionEvent.EventParam = LIFECYCLE_WELCOME_COMPLETE;
-				PostLifecycleService(TransitionEvent);
+			if ((ThisEvent.EventType == ES_TIMEOUT) && (ThisEvent.EventParam == WELCOME_LED_TIMER) ) { // EventParam is timer index 
+				// Recieved a welcome step timout 
+				if (BitCounter < LEDBits){
+					// Perform another welcome step
+					BitCounter++;
+					printf("LEDService [Welcome Mode]: Shifted %d times.\r\n", BitCounter);
+					WelcomeHex = WelcomeHex << 1;
+					lightLEDWelcome(WelcomeHex);
+				} else {
+					// Welcome mode is complete
+					NextMode = LEDWaiting4ADC;
+					printf("LEDService [Welcome Mode]: Waiting for ADC data\r\n");
+					TransitionEvent.EventType = ES_WELCOME_COMPLETE;
+					PostResetService(TransitionEvent);
+				}
 			}
 			break;
 		
-		// In this state the LED Strip is controlled by the resistive strip
+		// In this state the LED Strip is controlled by the resistor strip
 		// This mode can be left by calling LIFECYCLE_RESET_ALL
 		case LEDWaiting4ADC:
-			if (ThisEvent.EventType == LIFECYCLE_RESET_ALL){
-				printf("LEDService [Welcome Mode]: Waiting for ADC data\r\n");
-				lightLED(0x00000000);
-				NextMode = LEDWaiting4ADC;
-				break;
-			}
-			printf("LEDService: LEDService changing MODE\r\n");
 			if (ThisEvent.EventType == LED_MODE_1) lightLED(getRandomNum());
 			if (ThisEvent.EventType == LED_MODE_2) lightLED(getRandomNum());
 			if (ThisEvent.EventType == LED_MODE_3) lightLED(getRandomNum());
@@ -277,8 +279,23 @@ ES_Event RunLEDService( ES_Event ThisEvent )
 			if (ThisEvent.EventType == LED_MODE_7) lightLED(getRandomNum());
 			if (ThisEvent.EventType == LED_MODE_8) lightLED(getRandomNum());
 			if (ThisEvent.EventType == LED_MODE_9) lightLED(getRandomNum());
-			if (ThisEvent.EventType == LED_MODE_10) lightLED(getRandomNum());		
-			break;			
+			if (ThisEvent.EventType == LED_MODE_10) lightLED(getRandomNum());	
+			if (ThisEvent.EventType == ES_RESET) {
+				printf("LEDService Resetting.\r\n");
+				lightLED(0x00000000);
+				NextMode = Sleeping;
+			}
+			break;
+				
+		case Sleeping:
+			lightLED(0x00000000); // Do something else
+			if (ThisEvent.EventType == ES_INTERACTION) {
+				printf("LED Service goes back to welcome mode.\r\n");
+				NextMode = InitLED;
+				TransitionEvent.EventType = ES_INIT;
+				PostLEDService(TransitionEvent);
+			}
+			break;
   }
   //Set CurrentMode to NextMode
   CurrentMode = NextMode;
@@ -342,7 +359,7 @@ void lightLEDWelcome(uint32_t LEDHex) {
 	HWREG(GPIO_PORTB_BASE+(GPIO_O_DATA + ALL_BITS)) &= ~(GPIO_PIN_2);
 	HWREG(GPIO_PORTB_BASE+(GPIO_O_DATA + ALL_BITS)) |= (GPIO_PIN_2);
 	
-	ES_Timer_InitTimer(WELCOME_LED_TIMER, HALF_SEC); //#define WELCOME_LED_TIMER 0 (timer posts to RunLEDService)
+	ES_Timer_InitTimer(WELCOME_LED_TIMER, HALF_SEC); //#define WELCOME_LED_TIMER 4 (timer posts to RunLEDService)
 	printf("Welcome Timer Set Up.\r\n");
 }
 

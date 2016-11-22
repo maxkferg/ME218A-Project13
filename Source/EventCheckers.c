@@ -28,6 +28,7 @@
 #include "EventCheckers.h"
 #include "LEDService.h"
 #include "KnobService.h"
+#include "ResetService.h"
 
 /*******************************************************************g*********
  Function
@@ -54,13 +55,8 @@ bool Check4Keystroke(void)
     ES_Event ThisEvent;
     ThisEvent.EventType = ES_NEW_KEY;
     ThisEvent.EventParam = GetNewKey();
-    // test distribution list functionality by sending the 'L' key out via
-    // a distribution list.
-    if ( ThisEvent.EventParam == 'L'){
-      ES_PostList00( ThisEvent );
-    }else{   // otherwise post to Lifecycle Service for State control
-			PostLifecycleEventGenerator(ThisEvent);
-    }
+		// Post to Keyboard Service for State control
+		PostKeyboardEventGenerator(ThisEvent);
     return true;
   }
   return false;
@@ -77,3 +73,14 @@ bool Check4Knob(void)
 {
 	return CheckKnobEvents();
 }
+
+bool Check4ResetButton(void)
+{
+	return CheckButtonEvents();
+}
+/*
+bool Check4Interaction(void)
+{
+	return CheckInteraction();
+}
+*/

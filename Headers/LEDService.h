@@ -13,7 +13,8 @@
 typedef enum { 
 	InitLED,
 	LEDWelcomeMode,
-	LEDWaiting4ADC
+	LEDWaiting4ADC,
+	Sleeping
 } LEDMode_t ;
 
 // Public Function Prototypes

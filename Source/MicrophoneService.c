@@ -67,10 +67,10 @@
 #define HALF_SEC (ONE_SEC/2)
 #define TWO_SEC (ONE_SEC*2)
 
-#define N 32
+#define N 128
 #define MICROPHONE_PIN 0 
-#define SAMPLING_PERIOD 120 // (120+30 overhead) microseconds -> 6000Hz
-
+#define SAMPLING_PERIOD 50 // (50+150 overhead) microseconds -> 5000Hz
+#define SAMPLING_FREQUENCY 1000*1000/(SAMPLING_PERIOD+100)
 
 /*---------------------------- Module Functions ---------------------------*/
 /* prototypes for private functions for this service. They should be functions
@@ -226,9 +226,9 @@ ES_Event RunMicrophoneService( ES_Event ThisEvent )
 				// Push the new value to the audio buffer 
 				PushAudioBuffer(intensity);
 		
-				// If we have collected 32 samples we can perform the FFT
+				// If we have collected 64 samples we can perform the FFT
 				// Change the state to stop collecting, and post a MICROPHONE_SOUND_RECORDED event
-				if ( SampleCounter % 32 == 0 ){
+				if ( SampleCounter % 64 == 0 ){
 					ES_Event CurrentEvent;
 					CurrentState = MicrophoneFourierState;
 					CurrentEvent.EventType = MICROPHONE_SOUND_RECORDED;
@@ -256,7 +256,7 @@ ES_Event RunMicrophoneService( ES_Event ThisEvent )
 				PushAverageBuffer();
 				FourierCounter++;
 				// Decide which state to move to
-				if (FourierCounter>50){
+				if (FourierCounter>100){
 					// Move to the Water state
 					ES_Event CurrentEvent;
 					CurrentState = MicrophoneWaterState;
@@ -277,8 +277,8 @@ ES_Event RunMicrophoneService( ES_Event ThisEvent )
 		  // our results. We have finished sampling and transforming at this point
 		
 			if (ThisEvent.EventType==MICROPHONE_FOURIER_COMPLETED){
-				PrintAudioBuffer();
-				PrintFourierBuffer();
+				//PrintAudioBuffer();
+				//PrintFourierBuffer();
 				PrintAverageBuffer();
 					
 				// Water tube 1
@@ -437,7 +437,7 @@ static void PrintAverageBuffer(){
 	printf("Current Frequencies:\r\n");
 	for (int k=0; k<N/2; k++){   
     printf("%i : %i\r\n",frequency,(int)AverageBuffer[k]);
-		frequency = k*(2000/(N-1));
+		frequency = k*(SAMPLING_FREQUENCY/(N-1));
 	}
 	printf("-----------------\r\n");
 }
