@@ -198,10 +198,13 @@ ES_Event RunMicrophoneService( ES_Event ThisEvent )
 				printf("Microphone: Enagaging the Microphone\r\n");
 				CurrentState = MicrophoneWaitForSample;
 				ES_ShortTimerStart(TIMER_A,SAMPLING_PERIOD);
+			} else if (ThisEvent.EventType==ES_SLEEP){
+				// This service was commanded to sleep
+				CurrentState = MicrophoneSleepingState;
 			} else {
 				printf("Microphone: Waiting for start command\r\n");
 				printf("Microphone: Press 'm' to start and then 'n' to stop\r\n");
-			}		
+			}	
 			break;
 
 		case MicrophoneWaitForSample:
@@ -240,6 +243,10 @@ ES_Event RunMicrophoneService( ES_Event ThisEvent )
 					ES_ShortTimerStart(TIMER_A,SAMPLING_PERIOD);
 				}
 			}
+			if (ThisEvent.EventType==ES_SLEEP){
+				// This service was commanded to sleep
+				CurrentState = MicrophoneSleepingState;
+			}
 			break;
  			
 		case MicrophoneFourierState:
@@ -268,6 +275,10 @@ ES_Event RunMicrophoneService( ES_Event ThisEvent )
 					CurrentState = MicrophoneWaitForSample;
 					ES_ShortTimerStart(TIMER_A,SAMPLING_PERIOD);
 				}
+			}
+			if (ThisEvent.EventType==ES_SLEEP){
+				// This service was commanded to sleep
+				CurrentState = MicrophoneSleepingState;
 			}
 		break;
 		
@@ -320,9 +331,21 @@ ES_Event RunMicrophoneService( ES_Event ThisEvent )
 				printf("Microphone sample complete\r\n");
 				CurrentState = MicrophoneInitState;
 			}
+			if (ThisEvent.EventType==ES_SLEEP){
+				// This service was commanded to sleep
+				CurrentState = MicrophoneSleepingState;
+			}
 			// Loop back around. Start sampling again
 			CurrentState = MicrophoneWaitForSample;
 			ES_ShortTimerStart(TIMER_A,SAMPLING_PERIOD);
+		break;
+			
+		case MicrophoneSleepingState:
+			// In this state we stop taking samples and sleep
+		  // Exit this state when an instruction is received from ResetService
+			if (ThisEvent.EventType==ES_WAKE){
+				CurrentState = MicrophoneInitState;
+			}
 		break;
 	}
   return ReturnEvent;

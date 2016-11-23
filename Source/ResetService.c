@@ -60,19 +60,13 @@
    relevant to the behavior of this service
 */
 static bool getButtonState(void);
-static uint32_t getADCState(void);
-static uint32_t getADCDiff(uint32_t CurrentADCState, uint32_t LastADCState);
-static uint32_t getADCStateKnob(void);
-static uint32_t getADCDiffKnob(uint32_t CurrentADCStateKnob, uint32_t LastADCStateKnob);
 
 /*---------------------------- Module Variables ---------------------------*/
 // with the introduction of Gen2, we need a module level Priority variable
 static uint8_t MyPriority;
-static bool LastButtonState;
 static uint16_t InteractionTime;
-static uint32_t LastADCState;
-static uint32_t LastADCStateKnob;
 static ResetState_t CurrentState;
+static uint8_t LastButtonState;
 
 /*------------------------------ Module Code ------------------------------*/
 /****************************************************************************
@@ -91,8 +85,11 @@ static ResetState_t CurrentState;
 ****************************************************************************/
 bool InitializeResetService ( uint8_t Priority )
 {
+	ES_Event ThisEvent;
+	
 	//Initialize the MyPriority variable with the passed in parameter.
 	MyPriority = Priority;
+	
 	//Initialize the port line to monitor the button
 	HWREG(SYSCTL_RCGCGPIO)|= SYSCTL_RCGCGPIO_R1; 
   while ((HWREG(SYSCTL_RCGCGPIO) & SYSCTL_RCGCGPIO_R1) != SYSCTL_RCGCGPIO_R1);
@@ -100,18 +97,20 @@ bool InitializeResetService ( uint8_t Priority )
   HWREG(GPIO_PORTB_BASE+GPIO_O_DIR)&= ~GPIO_PIN_3;
 	
 	InteractionTime = 0;
-	//Initialize all the last states
-	LastButtonState = getButtonState();
-	LastADCState = getADCState();
-	LastADCStateKnob = getADCStateKnob();
-	
-	CurrentState = Running;
+	CurrentState = ResetInit;
 	
 	//Set up timer system
 	ES_Timer_Init(ES_Timer_RATE_1mS);
 	ES_Timer_InitTimer(INACTIVITY_TIMER, ONE_MINUTE);
-	printf("Reset Service Initializated.\r\n");
-	return true;
+	
+	// puts("Posting transition event\r\n");
+  ThisEvent.EventType = ES_INIT;
+  if (ES_PostToService( MyPriority, ThisEvent) == true)
+  {
+    return true;
+  } else {
+     return false;
+  }
 } 
 
 /****************************************************************************
@@ -136,11 +135,11 @@ bool CheckButtonEvents(void) {
 	// If the CurrentButtonState is different from the LastButtonState
 		ReturnVal = true;
 		if (CurrentButtonState == true) {
-		// If the reset button is down, then post reset event
-			ThisEvent.EventType = ES_RESET;
-			PostLEDService(ThisEvent);
-			PostWatertubeService(ThisEvent);
-			PostMicrophoneService(ThisEvent);
+			// If the reset button is down, then post reset event
+			ThisEvent.EventType = ES_INTERACTION;
+			printf("RESET BUTTON PRESSED\r\n");
+			printf("POSTING AND INTERACTION TO RESET SERVICE\r\n");
+			PostResetService(ThisEvent);
 		}
 	}
 
@@ -150,7 +149,7 @@ bool CheckButtonEvents(void) {
 
 /****************************************************************************
  Function
-     CheckInteraction
+     PostResetService
 
  Parameters
      None
@@ -158,26 +157,6 @@ bool CheckButtonEvents(void) {
  Returns
      bool true if an event posted
 ****************************************************************************/
-/*bool CheckInteraction(void){
-	bool ReturnVal = false;
-	bool CurrentADCState = getADCState();
-	bool CurrentADCStateKnob = getADCStateKnob();
-	uint32_t diffADCLED = getADCDiff(CurrentADCState, LastADCState);
-	uint32_t diffADCKnob = getADCDiffKnob(CurrentADCStateKnob, LastADCStateKnob);
-	ES_Event ThisEvent;
-
-	// If user either touches the resistor strip or twists the knob
-	if ((diffADCLED>=100) || (diffADCKnob>=100)) {
-		ReturnVal = true;
-		ThisEvent.EventType = ES_INTERACTION;
-		PostResetService(ThisEvent);
-	}
-	
-	LastADCState = CurrentADCState;
-	LastADCStateKnob = CurrentADCStateKnob;
-	return ReturnVal;
-}*/
-
 bool PostResetService( ES_Event ThisEvent )
 {
   return ES_PostToService( MyPriority, ThisEvent);
@@ -199,54 +178,89 @@ ES_Event RunResetService( ES_Event ThisEvent )
   ReturnEvent.EventType = ES_NO_EVENT;
 	ES_Event PostEvent;
 
-	if (CurrentState == Running) {
-		if (ThisEvent.EventType == ES_WELCOME_COMPLETE) {		
-			printf("Reset: Welcome back\r\n");
-			ES_Timer_InitTimer(PASSAGE_OF_TIME_TIMER, HALF_SEC); //#define PASSAGE_OF_TIME_TIMER 2
-			ES_Timer_StopTimer(INACTIVITY_TIMER);
-			ES_Timer_InitTimer(INACTIVITY_TIMER, THIRTY_SEC); //#define INACTIVITY_TIMER 3
-			InteractionTime = 0;
-		} else if (ThisEvent.EventType == ES_TIMEOUT && ThisEvent.EventParam == PASSAGE_OF_TIME_TIMER && InteractionTime < 90) {
-			InteractionTime++;
-			printf("Reset: Interaction Time %i\r\n",InteractionTime);
-			PostEvent.EventType = CHANGE_WATER_7;
-			PostEvent.EventParam = (InteractionTime/90.0*4096);
-			PostWatertubeService(PostEvent);
-			ES_Timer_InitTimer(PASSAGE_OF_TIME_TIMER, HALF_SEC);
-			// Print keyboard instructions
-			printf("Reset [waiting]: Press '1-7' or 'q-u' to trigger servos\r\n");
-			printf("Reset [waiting]: Press 'i-8' to trigger knob vibrator\r\n");
-			printf("Reset [waiting]: Press 'm' to turn on the microphone service\r\n");
-			printf("Reset [waiting]: Press 'c' to fire the welcome performance\r\n");
-			printf("Reset [waiting]: Press 'x' to trigger finale (passage_of_time_complete)\r\n");
-			printf("Reset [waiting]: Press 'z' to trigger reset due to inactivity\r\n\r\n");
-		} else if ((ThisEvent.EventType == ES_TIMEOUT) && (ThisEvent.EventParam == PASSAGE_OF_TIME_TIMER) && (InteractionTime == 90)) { // Main timer expires
-			printf("Reset: Passage of time complete\r\n");
-			PostEvent.EventType = ES_RESET;
-			PostLEDService(PostEvent);
-			PostWatertubeService(PostEvent);
-			PostMicrophoneService(PostEvent);
-		} else if ((ThisEvent.EventType == ES_TIMEOUT) && (ThisEvent.EventParam == INACTIVITY_TIMER)) { // Inactivity timer expires
-			PostEvent.EventType = ES_RESET;
-			PostLEDService(PostEvent);
-			PostWatertubeService(PostEvent);
-			PostMicrophoneService(PostEvent);
-			// Stop passage of time
-			ES_Timer_StopTimer(PASSAGE_OF_TIME_TIMER);
-			InteractionTime = 100;
-			printf("Please STOP!!\r\n");
-		} else if (ThisEvent.EventType == ES_INTERACTION) {
-			ES_Timer_StopTimer(INACTIVITY_TIMER);
-			ES_Timer_InitTimer(INACTIVITY_TIMER, THIRTY_SEC);
-			PostEvent.EventType = ES_INTERACTION; // Pull all of the three services out of sleeping mode
-			PostLEDService(PostEvent);
-			PostWatertubeService(PostEvent);
-			PostMicrophoneService(PostEvent);
-			// Now we wait for ES_WELCOME_COMPLETE from LEDService
-		}
+	switch (CurrentState){
+		// Psuedo Init State
+		// Once-off intialization and immediate transition to welcome state
+		// Future resets should jump straight to the welcome state
+		// Exit immediately after setting timers ect
+		case ResetInit:
+			CurrentState = ResetWelcome;
+			printf("Reset Service Initializated.\r\n");
+		break;
+			
+		// Welcome State
+		// The welcome performance is being performed
+		// Exit when the LED welcome performance is complete
+		case ResetWelcome:
+			if (ThisEvent.EventType == ES_WELCOME_COMPLETE) {		
+				printf("Reset: Welcome Performance is Complete\r\n");
+				ES_Timer_InitTimer(PASSAGE_OF_TIME_TIMER, HALF_SEC);
+				ES_Timer_StopTimer(INACTIVITY_TIMER);
+				ES_Timer_InitTimer(INACTIVITY_TIMER, THIRTY_SEC);
+				CurrentState = ResetRunning;
+				InteractionTime = 0;
+			}
+		break;
+			
+		// Running State
+		// All services are waiting for feedback
+		// Exit when the inactivity timer expires or 45 seconds is up
+		case ResetRunning:
+			if (ThisEvent.EventType == ES_TIMEOUT && ThisEvent.EventParam == PASSAGE_OF_TIME_TIMER && InteractionTime < 90) {
+				// Normal running loop
+				printf("Reset: Interaction Time %i\r\n",InteractionTime);
+				InteractionTime++;
+				// Increase the passage of time water tube
+				PostEvent.EventType = CHANGE_WATER_7;
+				PostEvent.EventParam = (InteractionTime/90.0*4096);
+				PostWatertubeService(PostEvent);
+				ES_Timer_InitTimer(PASSAGE_OF_TIME_TIMER, HALF_SEC);
+				// Print keyboard instructions
+				printf("Reset [waiting]: Press '1-7' or 'q-u' to trigger servos\r\n");
+				printf("Reset [waiting]: Press 'i-8' to trigger knob vibrator\r\n");
+				printf("Reset [waiting]: Press 'm' to turn on the microphone service\r\n");
+				printf("Reset [waiting]: Press 'c' to fire the welcome performance\r\n");
+				printf("Reset [waiting]: Press 'x' to trigger reset (inactivity/timeout)\r\n");
+			} else if (ThisEvent.EventType == ES_TIMEOUT && ThisEvent.EventParam == PASSAGE_OF_TIME_TIMER && InteractionTime >= 90) { 
+				// Main timer expired. Notify all service and move to Sleeping
+				PostEvent.EventType = ES_SLEEP;
+				PostResetService(PostEvent);
+			} else if (ThisEvent.EventType == ES_TIMEOUT && ThisEvent.EventParam == INACTIVITY_TIMER) { 
+				// Inactivity timer expired. 
+				PostEvent.EventType = ES_SLEEP;
+				PostResetService(PostEvent);
+			} else if (ThisEvent.EventType == ES_SLEEP){
+				// Someone told me to reset everything
+				// Notify all services and move to Sleeping
+				printf("Reset: Inactivity expiration\r\n");
+				PostEvent.EventType = ES_SLEEP;
+				PostLEDService(PostEvent);
+				PostWatertubeService(PostEvent);
+				PostMicrophoneService(PostEvent);
+				CurrentState = ResetSleeping;
+			}
+		break;
+		
+		// Sleeping State
+		// All services are sleeping after the performance has completed
+		// Exit when any services posts an ES_INTERACTION
+		case ResetSleeping:
+			if (ThisEvent.EventType == ES_INTERACTION) {
+				ES_Timer_StopTimer(INACTIVITY_TIMER);
+				ES_Timer_InitTimer(INACTIVITY_TIMER, THIRTY_SEC);
+				// Pull all of the three services out of sleeping mode
+				PostEvent.EventType = ES_WAKE; 
+				PostLEDService(PostEvent);
+				PostWatertubeService(PostEvent);
+				PostMicrophoneService(PostEvent);
+				// Move to the welcome state
+				CurrentState = ResetWelcome;
+			}
+		break;
 	}
-	return ReturnEvent; 
+	return ReturnEvent;
 }
+
 
 /***************************************************************************
  private functions
@@ -259,39 +273,5 @@ bool getButtonState(void) {
 		return false;
 	}
 }
-
-uint32_t getADCState(void) {
-	uint32_t ADInput[4];
-	uint32_t CurrentInput;
-	ADC_MultiRead(ADInput);
-	CurrentInput = ADInput[1]; // Get ADC data from PE1
-	//printf("CurrentInput is %u.\r\n", CurrentInput);
-	return CurrentInput;
-}
-
-uint32_t getADCDiff(uint32_t CurrentADCState, uint32_t LastADCState) {
-	if (CurrentADCState >= LastADCState) {
-		return (CurrentADCState - LastADCState);
-	} else {
-		return (LastADCState - CurrentADCState);
-	}
-}
-
-uint32_t getADCStateKnob(void) {
-	uint32_t ADInput[4];
-	uint32_t CurrentInputKnob;
-	ADC_MultiRead(ADInput);
-	CurrentInputKnob = ADInput[2]; // Get ADC data from PE0
-	//printf("Current Knob Input is %u.\r\n", CurrentInputKnob);
-	return CurrentInputKnob;
-}
-uint32_t getADCDiffKnob(uint32_t CurrentADCStateKnob, uint32_t LastADCStateKnob) {
-	if (CurrentADCStateKnob >= LastADCStateKnob) {
-		return (CurrentADCStateKnob - LastADCStateKnob);
-	} else {
-		return (LastADCStateKnob - CurrentADCStateKnob);
-	}
-}
-
 
 

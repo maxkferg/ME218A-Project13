@@ -164,6 +164,9 @@ bool CheckLEDEvents(void) {
 		PostResetService(ThisEvent);
 		ReturnVal = true;
 		
+		// If the user selects a particular mode for more than 500ms
+		// send that mode to the service. Otherwise we discard the events
+		
 		// Check if the LEDs are waiting for ADC
 		if (CurrentMode == LEDWaiting4ADC){
 			double  ADCRange = CurrentADCState / 4096.00;
@@ -280,8 +283,8 @@ ES_Event RunLEDService( ES_Event ThisEvent )
 			if (ThisEvent.EventType == LED_MODE_8) lightLED(getRandomNum());
 			if (ThisEvent.EventType == LED_MODE_9) lightLED(getRandomNum());
 			if (ThisEvent.EventType == LED_MODE_10) lightLED(getRandomNum());	
-			if (ThisEvent.EventType == ES_RESET) {
-				printf("LEDService Resetting.\r\n");
+			if (ThisEvent.EventType == ES_SLEEP) {
+				printf("LEDService Sleeping.\r\n");
 				lightLED(0x00000000);
 				NextMode = Sleeping;
 			}
@@ -289,7 +292,7 @@ ES_Event RunLEDService( ES_Event ThisEvent )
 				
 		case Sleeping:
 			lightLED(0x00000000); // Do something else
-			if (ThisEvent.EventType == ES_INTERACTION) {
+			if (ThisEvent.EventType == ES_WAKE) {
 				printf("LED Service goes back to welcome mode.\r\n");
 				NextMode = InitLED;
 				TransitionEvent.EventType = ES_INIT;

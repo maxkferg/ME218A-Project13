@@ -278,6 +278,7 @@ typedef enum {  ES_NO_EVENT = 0,
 								CHANGE_WATER_6,
 								CHANGE_WATER_7,
 								CHANGE_WATER_8,
+								WATERTUBE_SLEEP,
 								
 								// Knob Service events
 								CHANGE_KNOB_VIBRATION,
@@ -297,8 +298,9 @@ typedef enum {  ES_NO_EVENT = 0,
 								LIFECYCLE_RESET_ALL,
 								
 								// Reset Service Events
-								ES_RESET,
-								ES_INTERACTION,
+								ES_SLEEP,  // Posted to make services sleep  
+								ES_WAKE,   // Posted to make services wake
+								ES_INTERACTION, 
 								ES_WELCOME_COMPLETE
 } ES_EventTyp_t;
 

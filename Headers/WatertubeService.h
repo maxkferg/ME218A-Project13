@@ -19,7 +19,7 @@ ES_Event RunWatertubeService( ES_Event ThisEvent );
 
 typedef enum { WaterInitState,
 	             WaterDisplayState,
-               WaterResetState
+               WaterSleepingState
 } WatertubeState_t ;
 
 #endif /* WaterTubeService_H */

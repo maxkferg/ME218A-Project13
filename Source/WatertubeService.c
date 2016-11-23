@@ -55,9 +55,7 @@ static uint8_t MyPriority;
 static WatertubeState_t CurrentState;
 
 /*---------------------------- Private Functions ---------------------------*/
-uint32_t getADCStateServo(void);
-
-uint32_t getADCDiffServo(uint32_t CurrentADCStateServo, uint32_t LastADCStateServo);
+void setWatertube(uint8_t tubeNumber,uint16_t waterHeight);
 
 /*------------------------------ Module Code ------------------------------*/
 /****************************************************************************
@@ -154,66 +152,88 @@ ES_Event RunWatertubeService( ES_Event ThisEvent )
 		case WaterDisplayState:			
 			// Change the water height of tube 1
 			if( ThisEvent.EventType == CHANGE_WATER_1){
-					uint16_t Voltage = ThisEvent.EventParam;
-					printf("Watertube1: CHANGE_WATER_1 %i\n\r",Voltage);
-					int PulseWidth = (Voltage*2000/4096)+1000;
-					printf("PulseWidth = %d",PulseWidth);
-					PWM_TIVA_SetPulseWidth(PulseWidth,0);
+					setWatertube(1,ThisEvent.EventParam);
 			}
 			// Change the water height of tube 2
 			if( ThisEvent.EventType == CHANGE_WATER_2){
-					uint16_t Voltage = ThisEvent.EventParam;
-					printf("Watertube2: CHANGE_WATER_2 %i\n\r",Voltage);
-					int PulseWidth = (Voltage*2000/4096)+1000;
-					printf("PulseWidth = %d",PulseWidth);
-					PWM_TIVA_SetPulseWidth(PulseWidth,1);
+					setWatertube(2,ThisEvent.EventParam);
 			}
 			// Change the water height of tube 3
 			if( ThisEvent.EventType == CHANGE_WATER_3){
-					uint16_t Voltage = ThisEvent.EventParam;
-					printf("Watertube3: CHANGE_WATER_3 %i\n\r",Voltage);
-					int PulseWidth = (Voltage*2000/4096)+1000;
-					//printf("PulseWidth = %d",PulseWidth);
-					PWM_TIVA_SetPulseWidth(PulseWidth,2);
+					setWatertube(3,ThisEvent.EventParam);
 			}
 			// Change the water height of tube 4
 			if( ThisEvent.EventType == CHANGE_WATER_4){
-					uint16_t Voltage = ThisEvent.EventParam;
-					printf("Watertube4: CHANGE_WATER_4 %i\n\r",Voltage);
-					int PulseWidth = (Voltage*2000/4096)+1000;
-					//printf("PulseWidth = %d",PulseWidth);
-					PWM_TIVA_SetPulseWidth(PulseWidth,3);
+					setWatertube(4,ThisEvent.EventParam);
 			}
 			// Change the water height of tube 5
 			if( ThisEvent.EventType == CHANGE_WATER_5){
-					uint16_t Voltage = ThisEvent.EventParam;
-					printf("Watertube6: CHANGE_WATER_6 %i\n\r",Voltage);
-					int PulseWidth = (Voltage*2000/4096)+1000;
-					//printf("PulseWidth = %d",PulseWidth);
-					PWM_TIVA_SetPulseWidth(PulseWidth,4);
+					setWatertube(5,ThisEvent.EventParam);
 			}
 			// Change the water height of tube 6
 			if( ThisEvent.EventType == CHANGE_WATER_6){
-					uint16_t Voltage = ThisEvent.EventParam;
-					printf("Watertube6: CHANGE_WATER_6 %i\n\r",Voltage);
-					int PulseWidth = (Voltage*2000/4096)+1000;
-					//printf("PulseWidth = %d",PulseWidth);
-					PWM_TIVA_SetPulseWidth(PulseWidth,5);
+					setWatertube(6,ThisEvent.EventParam);
 			}
 			// Change the water height of tube 7
 			if( ThisEvent.EventType == CHANGE_WATER_7){
-					uint16_t Voltage = ThisEvent.EventParam;
-					printf("Watertube7: CHANGE_WATER_7 %i\n\r",Voltage);
-					int PulseWidth = (Voltage*2000/4096)+1000;
-					//printf("PulseWidth = %d",PulseWidth);
-					PWM_TIVA_SetPulseWidth(PulseWidth,6);
+					setWatertube(7,ThisEvent.EventParam);
+			}
+			
+			// Reset all the tubes on sleep
+			if( ThisEvent.EventType == ES_SLEEP){
+				// Empty all the tubes
+				printf("Watertube: Emptying tubes.\r\n");
+				setWatertube(1,ThisEvent.EventParam);
+				setWatertube(2,ThisEvent.EventParam);
+				setWatertube(3,ThisEvent.EventParam);
+				setWatertube(4,ThisEvent.EventParam);
+				setWatertube(5,ThisEvent.EventParam);
+				setWatertube(6,ThisEvent.EventParam);
+				setWatertube(7,ThisEvent.EventParam);
+				// Post my own sleeping event
+				printf("Watertube: Sleeping\r\n");
+				CurrentState = WaterSleepingState;
 			}
 		break;
 	
-		case WaterResetState:
-			puts("Watertube: Entered the Reset State\r\n");
-			CurrentState = WaterDisplayState;
+		// The watertube sleeping mode
+		case WaterSleepingState:
+			if (ThisEvent.EventType == ES_WAKE) {
+				printf("Watertube: Waking up.\r\n");
+				CurrentState = WaterDisplayState;
+			}
 		break;
 	}
   return ReturnEvent;
 }
+
+
+/****************************************************************************
+ Function
+    setWatertube
+
+ Parameters
+   uint8_t tubeNumber: The watertube number (1-7)
+   uint16_t waterHeight: The water level (0-4096)
+
+ Returns
+   Nothing
+
+ Description
+   Adjust the water height
+****************************************************************************/
+void setWatertube(uint8_t tubeNumber, uint16_t waterHeight){
+		uint8_t PWMNumber = tubeNumber-1;
+		uint8_t PulseWidth = (waterHeight*2000/4096)+1000;
+	
+		if (tubeNumber<1 || tubeNumber>7){
+			printf("Invalid water tube number %i",tubeNumber);
+		} else if (waterHeight>4096){
+			printf("Invalid water tube height %i",waterHeight);
+		} else {
+			printf("Watertube: Change tube %i height to %i\n\r",tubeNumber,waterHeight);
+			//printf("Watertube: Change pwm %i height to %i\n\r",PWMNumber,PulseWidth);
+			PWM_TIVA_SetPulseWidth(PulseWidth,PWMNumber);
+	}
+}
+

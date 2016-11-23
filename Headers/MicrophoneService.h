@@ -22,7 +22,8 @@ ES_Event RunMicrophoneService( ES_Event ThisEvent );
 typedef enum { MicrophoneInitState,
 							 MicrophoneWaitForSample,
 							 MicrophoneFourierState,
-	             MicrophoneWaterState
+	             MicrophoneWaterState,
+							 MicrophoneSleepingState
 } MicrophoneState_t ;
 
 

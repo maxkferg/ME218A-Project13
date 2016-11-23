@@ -19,6 +19,5 @@ bool Check4Keystroke(void);
 bool Check4LEDService(void);
 bool Check4Knob(void);
 bool Check4ResetButton(void);
-bool Check4Interaction(void);
 
 #endif /* EventCheckers_H */

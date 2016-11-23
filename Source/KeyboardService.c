@@ -6,7 +6,9 @@
    1.0.1
 
  Description
-	KeyboardService controls the following:
+	KeyboardService is used to generate keyboard events
+	It will not be included in the final production build
+	Unlike the other services it does not have a sleeping mode
 
 ****************************************************************************/
 /*----------------------------- Include Files -----------------------------*/
@@ -33,7 +35,6 @@
 #include "KnobService.h"
 #include "LEDService.h"
 
-
 /*----------------------------- Module Defines ----------------------------*/
 // these times assume a 1.000mS/tick timing
 #define ONE_SEC 1000
@@ -56,11 +57,6 @@
 // with the introduction of Gen2, we need a module level Priority variable
 static uint8_t MyPriority;
 
-// Keep track of the current state
-static KeyboardState_t CurrentState;
-
-
-
 /*------------------------------ Module Code ------------------------------*/
 /****************************************************************************
  Function
@@ -82,8 +78,6 @@ bool InitKeyboardService( uint8_t Priority )
 
   MyPriority = Priority;
 
-	CurrentState = InitPState;
-		
   // Post the initial transition event
 	// puts("Posting transition event\r\n");
   ThisEvent.EventType = ES_INIT;
@@ -131,8 +125,6 @@ ES_Event RunKeyboardService( ES_Event ThisEvent )
 }
 
 
-
-
 /****************************************************************************
  Function
      PostKeyboardEventGenerator
@@ -160,45 +152,74 @@ void PostKeyboardEventGenerator( ES_Event ThisEvent ){
 	}
 	// Tube empty events (keys 1-7)
 	if (ThisEvent.EventParam=='1'){
-		printf("CHANGE_WATER_1 with value 0\r\n");
 		PsuedoEvent.EventType = CHANGE_WATER_1;
 		PsuedoEvent.EventParam = 0;	
 		PostWatertubeService(PsuedoEvent);
 	}
 	if (ThisEvent.EventParam=='2'){
-		printf("CHANGE_WATER_2 with value 0\r\n");
 		PsuedoEvent.EventType = CHANGE_WATER_2;
 		PsuedoEvent.EventParam = 0;	
 		PostWatertubeService(PsuedoEvent);
 	}
 		if (ThisEvent.EventParam=='3'){
-		printf("CHANGE_WATER_3 with value 0\r\n");
 		PsuedoEvent.EventType = CHANGE_WATER_3;
 		PsuedoEvent.EventParam = 0;	
 		PostWatertubeService(PsuedoEvent);
 	}
 	if (ThisEvent.EventParam=='4'){
-		printf("CHANGE_WATER_4 with value 0\r\n");
 		PsuedoEvent.EventType = CHANGE_WATER_4;
 		PsuedoEvent.EventParam = 0;	
 		PostWatertubeService(PsuedoEvent);
 	}
 	if (ThisEvent.EventParam=='5'){
-		printf("CHANGE_WATER_5 with value 0\r\n");
 		PsuedoEvent.EventType = CHANGE_WATER_5;
 		PsuedoEvent.EventParam = 0;	
 		PostWatertubeService(PsuedoEvent);
 	}
 	if (ThisEvent.EventParam=='6'){
-		printf("CHANGE_WATER_6 with value 0\r\n");
 		PsuedoEvent.EventType = CHANGE_WATER_6;
 		PsuedoEvent.EventParam = 0;	
 		PostWatertubeService(PsuedoEvent);
 	}
 	if (ThisEvent.EventParam=='7'){
-		printf("CHANGE_WATER_7 with value 0\r\n");
 		PsuedoEvent.EventType = CHANGE_WATER_7;
 		PsuedoEvent.EventParam = 0;	
+		PostWatertubeService(PsuedoEvent);
+	}
+	// Tube fill events (q-u)
+		if (ThisEvent.EventParam=='q'){
+		PsuedoEvent.EventType = CHANGE_WATER_1;
+		PsuedoEvent.EventParam = 4096;	
+		PostWatertubeService(PsuedoEvent);
+	}
+	if (ThisEvent.EventParam=='w'){
+		PsuedoEvent.EventType = CHANGE_WATER_2;
+		PsuedoEvent.EventParam = 4096;	
+		PostWatertubeService(PsuedoEvent);
+	}
+	if (ThisEvent.EventParam=='e'){
+		PsuedoEvent.EventType = CHANGE_WATER_3;
+		PsuedoEvent.EventParam = 4096;	
+		PostWatertubeService(PsuedoEvent);
+	}
+	if (ThisEvent.EventParam=='r'){
+		PsuedoEvent.EventType = CHANGE_WATER_4;
+		PsuedoEvent.EventParam = 4096;	
+		PostWatertubeService(PsuedoEvent);
+	}
+	if (ThisEvent.EventParam=='t'){
+		PsuedoEvent.EventType = CHANGE_WATER_5;
+		PsuedoEvent.EventParam = 4096;	
+		PostWatertubeService(PsuedoEvent);
+	}
+	if (ThisEvent.EventParam=='y'){
+		PsuedoEvent.EventType = CHANGE_WATER_6;
+		PsuedoEvent.EventParam = 4096;	
+		PostWatertubeService(PsuedoEvent);
+	}
+	if (ThisEvent.EventParam=='u'){
+		PsuedoEvent.EventType = CHANGE_WATER_7;
+		PsuedoEvent.EventParam = 4096;	
 		PostWatertubeService(PsuedoEvent);
 	}
 	// Knob service
@@ -214,86 +235,24 @@ void PostKeyboardEventGenerator( ES_Event ThisEvent ){
 		PsuedoEvent.EventParam = 3300;	
 		PostKnobService(PsuedoEvent);
 	}
-	// Tube fill events (q-u)
-		if (ThisEvent.EventParam=='q'){
-		printf("CHANGE_WATER_1 with value 4096\r\n");
-		PsuedoEvent.EventType = CHANGE_WATER_1;
-		PsuedoEvent.EventParam = 4096;	
-		PostWatertubeService(PsuedoEvent);
-	}
-	if (ThisEvent.EventParam=='w'){
-		printf("CHANGE_WATER_2 with value 4096\r\n");
-		PsuedoEvent.EventType = CHANGE_WATER_2;
-		PsuedoEvent.EventParam = 4096;	
-		PostWatertubeService(PsuedoEvent);
-	}
-	if (ThisEvent.EventParam=='e'){
-		printf("CHANGE_WATER_3 with value 4096\r\n");
-		PsuedoEvent.EventType = CHANGE_WATER_3;
-		PsuedoEvent.EventParam = 4096;	
-		PostWatertubeService(PsuedoEvent);
-	}
-	if (ThisEvent.EventParam=='r'){
-		printf("CHANGE_WATER_4 with value 4096\r\n");
-		PsuedoEvent.EventType = CHANGE_WATER_4;
-		PsuedoEvent.EventParam = 4096;	
-		PostWatertubeService(PsuedoEvent);
-	}
-	if (ThisEvent.EventParam=='t'){
-		printf("CHANGE_WATER_5 with value 4096\r\n");
-		PsuedoEvent.EventType = CHANGE_WATER_5;
-		PsuedoEvent.EventParam = 4096;	
-		PostWatertubeService(PsuedoEvent);
-	}
-	if (ThisEvent.EventParam=='y'){
-		printf("CHANGE_WATER_6 with value 4096\r\n");
-		PsuedoEvent.EventType = CHANGE_WATER_6;
-		PsuedoEvent.EventParam = 4096;	
-		PostWatertubeService(PsuedoEvent);
-	}
-	if (ThisEvent.EventParam=='u'){
-		printf("CHANGE_WATER_7 with value 2048\r\n");
-		PsuedoEvent.EventType = CHANGE_WATER_7;
-		PsuedoEvent.EventParam = 2048;	
-		PostWatertubeService(PsuedoEvent);
-	}
-	// Lifecycle Events 
+	// Reset Events 
 	if (ThisEvent.EventParam==' '){
 		// When all the services have been initialized
 		printf("NO_EVENT\r\n"); 
 		PsuedoEvent.EventType = ES_NO_EVENT;
 		PostResetService(PsuedoEvent);
 	}
-	if (ThisEvent.EventParam=='h'){
-		// When all the services have been initialized
-		printf("LIFECYCLE_HARDWARE_INITALIZED\r\n"); 
-		PsuedoEvent.EventType = LIFECYCLE_HARDWARE_INITALIZED;
-		PostResetService(PsuedoEvent);
-	}
 	if (ThisEvent.EventParam=='j'){
 		// When the user walks away
-		printf("LIFECYCLE_WELCOME_COMPLETE\r\n");
+		printf("RESET_WELCOME_COMPLETE\r\n");
 		PsuedoEvent.EventType = LIFECYCLE_WELCOME_COMPLETE;
 		PostResetService(PsuedoEvent);
 	}
 	if (ThisEvent.EventParam=='x'){\
 		// When the user is out of time
-		printf("LIFECYCLE_PASSAGE_OF_TIME_COMPLETE\r\n");
-		PsuedoEvent.EventType = LIFECYCLE_PASSAGE_OF_TIME_COMPLETE;
+		printf("Firing ES_SLEEP on Reset Service\r\n");
+		PsuedoEvent.EventType = ES_SLEEP;
 		PostResetService(PsuedoEvent);
-	}
-	if (ThisEvent.EventParam=='z'){
-		// When the user walks away
-		printf("LIFECYCLE_INACTIVITY_RESET\r\n");
-		PsuedoEvent.EventType = LIFECYCLE_INACTIVITY_RESET;
-		PostResetService(PsuedoEvent);
-	}
-	if (ThisEvent.EventParam=='v'){
-		// When the perfomance is done and the user presses reset
-		printf("LIFECYCLE_RESET_ALL\r\n");
-		printf("Lifecycle: Resettting ALL services\r\n");
-		PsuedoEvent.EventType = LIFECYCLE_RESET_ALL;
-		ES_PostAll(PsuedoEvent);
 	}
 	if (ThisEvent.EventParam=='c'){
 		// When the perfomance is done and the user presses reset

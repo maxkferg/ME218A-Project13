@@ -68,7 +68,6 @@ bool Check4LEDService(void)
 	return CheckLEDEvents();
 }
 
-
 bool Check4Knob(void)
 {
 	return CheckKnobEvents();
@@ -78,9 +77,3 @@ bool Check4ResetButton(void)
 {
 	return CheckButtonEvents();
 }
-/*
-bool Check4Interaction(void)
-{
-	return CheckInteraction();
-}
-*/

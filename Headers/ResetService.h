@@ -10,7 +10,12 @@
 #include "ES_Types.h"
 
 // State definitions
-typedef enum {Running} ResetState_t ;
+typedef enum {
+	ResetInit,
+	ResetWelcome,
+	ResetRunning,
+	ResetSleeping
+} ResetState_t ;
 
 // Public Function Prototypes
 bool InitializeResetService ( uint8_t Priority );
