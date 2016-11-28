@@ -30,7 +30,7 @@
 /****************************************************************************/
 // This macro determines that nuber of services that are *actually* used in
 // a particular application. It will vary in value from 1 to MAX_NUM_SERVICES
-#define NUM_SERVICES 6
+#define NUM_SERVICES 7
 
 /****************************************************************************/
 // These are the definitions for Service 0, the lowest priority service.
@@ -119,11 +119,11 @@
 // These are the definitions for Service 6
 #if NUM_SERVICES > 6
 // the header file with the public function prototypes
-#define SERV_6_HEADER "TestHarnessService6.h"
+#define SERV_6_HEADER "ResistiveStripService.h"
 // the name of the Init function
-#define SERV_6_INIT InitTestHarnessService6
+#define SERV_6_INIT InitResistiveStripService
 // the name of the run function
-#define SERV_6_RUN RunTestHarnessService6
+#define SERV_6_RUN RunResistiveStripService
 // How big should this services Queue be?
 #define SERV_6_QUEUE_SIZE 3
 #endif
@@ -283,6 +283,9 @@ typedef enum {  ES_NO_EVENT = 0,
 								// Knob Service events
 								CHANGE_KNOB_VIBRATION,
 								
+								// Resistive Strip Events 
+								RESISTIVE_STRIP_CHANGED,
+								
 								// Microphone Service Events
 								MICROPHONE_SOUND_RECORDED,
 								MICROPHONE_FOURIER_COMPLETED,
@@ -340,7 +343,7 @@ typedef enum {  ES_NO_EVENT = 0,
 
 /****************************************************************************/
 // This is the list of event checking functions
-#define EVENT_CHECK_LIST Check4Keystroke, Check4LEDService, Check4Knob, Check4ResetButton
+#define EVENT_CHECK_LIST Check4Keystroke, Check4Knob, Check4ResetButton
 
 
 
@@ -356,7 +359,7 @@ typedef enum {  ES_NO_EVENT = 0,
 #define TIMER2_RESP_FUNC PostResetService
 #define TIMER3_RESP_FUNC PostResetService
 #define TIMER4_RESP_FUNC PostLEDService
-#define TIMER5_RESP_FUNC TIMER_UNUSED
+#define TIMER5_RESP_FUNC PostResistiveStripService
 #define TIMER6_RESP_FUNC TIMER_UNUSED
 #define TIMER7_RESP_FUNC TIMER_UNUSED
 #define TIMER8_RESP_FUNC TIMER_UNUSED
@@ -378,6 +381,7 @@ typedef enum {  ES_NO_EVENT = 0,
 #define PASSAGE_OF_TIME_TIMER 2
 #define INACTIVITY_TIMER 3
 #define WELCOME_LED_TIMER 4
-//#define KNOB_VIBRATION_TIMER 5
+#define RESISTIVE_STRIP_TIMER 5
+//#define KNOB_VIBRATION_TIMER 6
 
 #endif /* CONFIGURE_H */

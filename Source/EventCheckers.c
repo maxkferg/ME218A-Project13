@@ -26,7 +26,6 @@
 #include "ES_ServiceHeaders.h"
 #include "ES_Port.h"
 #include "EventCheckers.h"
-#include "LEDService.h"
 #include "KnobService.h"
 #include "ResetService.h"
 
@@ -60,12 +59,6 @@ bool Check4Keystroke(void)
     return true;
   }
   return false;
-}
-
-
-bool Check4LEDService(void)
-{
-	return CheckLEDEvents();
 }
 
 bool Check4Knob(void)

@@ -23,7 +23,6 @@
 #include "termio.h"
 #include "ADMulti.h" // ADC Library
 #include "PWM10Tiva.h"
-
 #include "ResetService.h"
 #include "KnobService.h"
 

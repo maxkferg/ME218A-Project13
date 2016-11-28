@@ -50,6 +50,7 @@
 #define ONE_FIFTH_SEC (ONE_SEC/5)
 #define ONE_THIRD_SEC (ONE_SEC/3)
 #define HALF_SEC (ONE_SEC/2)
+#define QUARTER_SEC (ONE_SEC/4)
 #define TWO_SEC (ONE_SEC*2)
 #define THREE_SEC (ONE_SEC*3)
 #define FIVE_SEC (ONE_SEC*5)
@@ -61,16 +62,14 @@
 static void SR_Init(void);
 static void lightLED(uint32_t LEDHex);
 static void lightLEDWelcome(uint32_t LEDHex);
-static uint32_t getADCState(void);
-static uint32_t getADCDiff(uint32_t CurrentADCState, uint32_t LastADCState);
-static uint32_t getRandomNum(void);
+static uint32_t getRandomNum(void);  // Used for testing LEDs, but not used in final demo
+static void LEDSleepingSequence(void);
 
 
 /*---------------------------- Module Variables ---------------------------*/
 // with the introduction of Gen2, we need a module level Priority variable
 static uint8_t MyPriority;
 static int BitCounter;
-static uint32_t LastADCState;
 static LEDMode_t CurrentMode;
 static uint32_t WelcomeHex;
 
@@ -97,7 +96,7 @@ bool InitLEDService ( uint8_t Priority )
 	
   // Set LEDBits to 18 (6 RGB LEDs with 3 bits to write) and BitCounter to 0
   BitCounter = 0;
-	WelcomeHex = 0x98334000; // A serial data used to light up all LEDs in a welcoming pattern
+	WelcomeHex = 0xD5BB8000; // A serial data used to light up all LEDs in a welcoming pattern
 
 	// Initialize Shift Register
 	SR_Init();
@@ -118,7 +117,6 @@ bool InitLEDService ( uint8_t Priority )
 	printf("LEDs All Clear.\r\n");
 	
 	// Sample ADC port line PE1 and use it to initialize the LastADCState variable
-  LastADCState = getADCState();
   CurrentMode = InitLED;
   
   // Post the initial transition event
@@ -149,75 +147,6 @@ bool PostLEDService( ES_Event ThisEvent )
 }
 
 
-bool CheckLEDEvents(void) {
-	//Local ReturnVal = False, CurrentADCState
-	bool ReturnVal = false;
-	uint32_t CurrentADCState = getADCState();
-	ES_Event ThisEvent;
-	uint32_t diff = getADCDiff(CurrentADCState, LastADCState);
-	//printf("CurrentADCState: %u, LastADCState = %u\r\n", CurrentADCState, LastADCState);
-	
-	//If the CurrentButtonState is different from the LastButtonState
-	if (diff >=100){
-		// Tell the reset service that there was interaction
-		ThisEvent.EventType = ES_INTERACTION;
-		PostResetService(ThisEvent);
-		ReturnVal = true;
-		
-		// If the user selects a particular mode for more than 500ms
-		// send that mode to the service. Otherwise we discard the events
-		
-		// Check if the LEDs are waiting for ADC
-		if (CurrentMode == LEDWaiting4ADC){
-			double  ADCRange = CurrentADCState / 4096.00;
-			if (ADCRange <= 0.10) {
-				ThisEvent.EventType = LED_MODE_1;
-				PostLEDService(ThisEvent);
-				printf("\r/*****LED MODE 01*****/\r\n");
-			} else if (ADCRange <= 0.20){ 
-				ThisEvent.EventType = LED_MODE_2;
-				PostLEDService(ThisEvent);
-				printf("\r/*****LED MODE 02*****/\r\n");
-			} else if (ADCRange <= 0.30){ 
-				ThisEvent.EventType = LED_MODE_3;
-				PostLEDService(ThisEvent);
-				printf("\r/*****LED MODE 03*****/\r\n");
-			} else if (ADCRange <= 0.40){ 
-				ThisEvent.EventType = LED_MODE_4;
-				PostLEDService(ThisEvent);
-				printf("\r/*****LED MODE 04*****/\r\n");
-			} else if (ADCRange <= 0.50){ 
-				ThisEvent.EventType = LED_MODE_5;
-				PostLEDService(ThisEvent);
-				printf("\r/*****LED MODE 05*****/\r\n");
-			} else if (ADCRange <= 0.60){ 
-				ThisEvent.EventType = LED_MODE_6;
-				PostLEDService(ThisEvent);
-				printf("\r/*****LED MODE 06*****/\r\n");
-			} else if (ADCRange <= 0.70){ 
-				ThisEvent.EventType = LED_MODE_7;
-				PostLEDService(ThisEvent);
-				printf("\r/*****LED MODE 07*****/\r\n");
-			} else if (ADCRange <= 0.80){ 
-				ThisEvent.EventType = LED_MODE_8;
-				PostLEDService(ThisEvent);
-				printf("\r/*****LED MODE 08*****/\r\n");
-			} else if (ADCRange <= 0.90){ 
-				ThisEvent.EventType = LED_MODE_9;
-				PostLEDService(ThisEvent);
-				printf("\r/*****LED MODE 09*****/\r\n");
-			} else if (ADCRange <= 1.00){ 
-				ThisEvent.EventType = LED_MODE_10;
-				PostLEDService(ThisEvent);
-				printf("\r/*****LED MODE 10*****/\r\n");
-			}
-		}
-		//Set LastADCState to the CurrentADCState
-		LastADCState = CurrentADCState;
-	}
-	return ReturnVal;
-}
-
 /****************************************************************************
  Function
     RunLEDService
@@ -243,7 +172,7 @@ ES_Event RunLEDService( ES_Event ThisEvent )
 				printf("LEDService Intialized. Starting the welcome performance.\r\n");
 				NextMode = LEDWelcomeMode;
 				BitCounter = 0;
-				WelcomeHex = 0x98334000;
+				WelcomeHex = 0xD5BB8000;
 				lightLEDWelcome(WelcomeHex);
 			}
 		break;
@@ -273,28 +202,31 @@ ES_Event RunLEDService( ES_Event ThisEvent )
 		// In this state the LED Strip is controlled by the resistor strip
 		// This mode can be left by calling LIFECYCLE_RESET_ALL
 		case LEDWaiting4ADC:
-			if (ThisEvent.EventType == LED_MODE_1) lightLED(getRandomNum());
-			if (ThisEvent.EventType == LED_MODE_2) lightLED(getRandomNum());
-			if (ThisEvent.EventType == LED_MODE_3) lightLED(getRandomNum());
-			if (ThisEvent.EventType == LED_MODE_4) lightLED(getRandomNum());
-			if (ThisEvent.EventType == LED_MODE_5) lightLED(getRandomNum());
-			if (ThisEvent.EventType == LED_MODE_6) lightLED(getRandomNum());
-			if (ThisEvent.EventType == LED_MODE_7) lightLED(getRandomNum());
-			if (ThisEvent.EventType == LED_MODE_8) lightLED(getRandomNum());
-			if (ThisEvent.EventType == LED_MODE_9) lightLED(getRandomNum());
-			if (ThisEvent.EventType == LED_MODE_10) lightLED(getRandomNum());	
+			if (ThisEvent.EventType==RESISTIVE_STRIP_CHANGED){
+				printf("LED Moving to Mode %i\r\n\n",ThisEvent.EventParam);
+				if (ThisEvent.EventParam == 0) lightLED(0x88950000);
+				if (ThisEvent.EventParam == 1) lightLED(0x47628000);
+				if (ThisEvent.EventParam == 2) lightLED(0x39BC4000);
+				if (ThisEvent.EventParam == 3) lightLED(0xCE478000);
+				if (ThisEvent.EventParam == 4) lightLED(0x7128C000);
+				if (ThisEvent.EventParam == 5) lightLED(0x8AD50000);
+				if (ThisEvent.EventParam == 6) lightLED(0x57FA8000);
+				if (ThisEvent.EventParam == 7) lightLED(0xBD4F4000);
+				if (ThisEvent.EventParam == 8) lightLED(0xE9D9C000);
+				if (ThisEvent.EventParam == 9) lightLED(0x4C9B0000);
+			}
 			if (ThisEvent.EventType == ES_SLEEP) {
 				printf("LEDService Sleeping.\r\n");
-				lightLED(0x00000000);
+				LEDSleepingSequence();
 				NextMode = Sleeping;
 			}
 			break;
 				
 		case Sleeping:
-			lightLED(0x00000000); // Do something else
 			if (ThisEvent.EventType == ES_WAKE) {
 				printf("LED Service goes back to welcome mode.\r\n");
 				NextMode = InitLED;
+				lightLED(0x00000000); // Clear all LED bits for a new round
 				TransitionEvent.EventType = ES_INIT;
 				PostLEDService(TransitionEvent);
 			}
@@ -312,6 +244,21 @@ ES_Event RunLEDService( ES_Event ThisEvent )
 /***************************************************************************
  private functions
  ***************************************************************************/
+
+
+/****************************************************************************
+ Function
+    SR_Init
+
+ Parameters
+   None
+
+ Returns
+   Nothing
+
+ Description
+   Initialize the shift register
+****************************************************************************/
 void SR_Init(void){
   // Set up port B by enabling the peripheral clock and setting the direction
   // of PB0, PB1 & PB2 to outputs
@@ -326,6 +273,21 @@ void SR_Init(void){
 	HWREG(GPIO_PORTB_BASE+(GPIO_O_DATA+ALL_BITS)) |= GPIO_PIN_2;
 }
 
+
+
+/****************************************************************************
+ Function
+    lightLED
+
+ Parameters
+   uint32_t LEDHex
+
+ Returns
+   Nothing
+
+ Description
+   Light the LED in a pattern corrosponding to LEDHex
+****************************************************************************/
 void lightLED(uint32_t LEDHex) {
 	// Lower the register clock
 	HWREG(GPIO_PORTB_BASE+(GPIO_O_DATA + ALL_BITS)) &= ~(GPIO_PIN_2);
@@ -347,6 +309,20 @@ void lightLED(uint32_t LEDHex) {
 	HWREG(GPIO_PORTB_BASE+(GPIO_O_DATA + ALL_BITS)) |= (GPIO_PIN_2);
 }
 
+
+/****************************************************************************
+ Function
+    lightLEDWelcome
+
+ Parameters
+   uint32_t LEDHex
+
+ Returns
+   Nothing
+
+ Description
+   Display the welcome performance
+****************************************************************************/
 void lightLEDWelcome(uint32_t LEDHex) {
 	if((LEDHex & 0x80000000) == 0x80000000){
 		HWREG(GPIO_PORTB_BASE+(GPIO_O_DATA + ALL_BITS)) |= GPIO_PIN_0;   
@@ -362,27 +338,19 @@ void lightLEDWelcome(uint32_t LEDHex) {
 	HWREG(GPIO_PORTB_BASE+(GPIO_O_DATA + ALL_BITS)) &= ~(GPIO_PIN_2);
 	HWREG(GPIO_PORTB_BASE+(GPIO_O_DATA + ALL_BITS)) |= (GPIO_PIN_2);
 	
-	ES_Timer_InitTimer(WELCOME_LED_TIMER, HALF_SEC); //#define WELCOME_LED_TIMER 4 (timer posts to RunLEDService)
-	printf("Welcome Timer Set Up.\r\n");
+	ES_Timer_InitTimer(WELCOME_LED_TIMER, QUARTER_SEC); //(timer posts to RunLEDService)
+	//printf("Welcome Timer Set Up.\r\n");
 }
 
-uint32_t getADCState(void) {
-	uint32_t ADInput[4];
-	uint32_t CurrentInput;
-	ADC_MultiRead(ADInput);
-	CurrentInput = ADInput[1]; // Get ADC data from PE1
-	//printf("CurrentInput is %u.\r\n", CurrentInput);
-	return CurrentInput;
-}
 
-uint32_t getADCDiff(uint32_t CurrentADCState, uint32_t LastADCState) {
-	if (CurrentADCState >= LastADCState) {
-		return (CurrentADCState - LastADCState);
-	} else {
-		return (LastADCState - CurrentADCState);
-	}
-}
-
+/****************************************************************************
+ Function
+    getRandomNum
+ Parameters
+   None
+ Returns
+   uint32_t RandonNum. A Random uint32 number
+****************************************************************************/
 uint32_t getRandomNum(void) {
 	uint32_t x = rand() & 0xff;
 	x |= (rand() & 0xff) << 8;
@@ -391,3 +359,28 @@ uint32_t getRandomNum(void) {
 	return x;
 }
 
+/****************************************************************************
+ Function
+    LEDSleepingSequence
+ Parameters
+   None
+ Returns
+   None
+ Description
+   Display the sleeping performance
+****************************************************************************/
+void LEDSleepingSequence(void) {
+	lightLED(0xFFFFC000);
+	lightLED(0x9FFF4000);
+	lightLED(0xD3FA4000);
+	lightLED(0x5A52C000);
+	lightLED(0x5BF2C000);
+	lightLED(0x5FFEC000);
+	lightLED(0xFFFFC000);
+	lightLED(0xFD3FC000);
+	lightLED(0xEB17C000);
+	lightLED(0x5A52C000);
+	lightLED(0xFA53C000);
+	lightLED(0xFE5FC000);
+	lightLED(0xFFFFC000);	
+}

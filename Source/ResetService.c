@@ -185,7 +185,7 @@ ES_Event RunResetService( ES_Event ThisEvent )
 		// Exit immediately after setting timers ect
 		case ResetInit:
 			CurrentState = ResetWelcome;
-			printf("Reset Service Initializated.\r\n");
+		printf("ResetService: Initializated.\r\n");
 		break;
 			
 		// Welcome State
@@ -193,7 +193,7 @@ ES_Event RunResetService( ES_Event ThisEvent )
 		// Exit when the LED welcome performance is complete
 		case ResetWelcome:
 			if (ThisEvent.EventType == ES_WELCOME_COMPLETE) {		
-				printf("Reset: Welcome Performance is Complete\r\n");
+				printf("ResetService: Welcome Performance is Complete\r\n");
 				ES_Timer_InitTimer(PASSAGE_OF_TIME_TIMER, HALF_SEC);
 				ES_Timer_StopTimer(INACTIVITY_TIMER);
 				ES_Timer_InitTimer(INACTIVITY_TIMER, THIRTY_SEC);
@@ -215,13 +215,14 @@ ES_Event RunResetService( ES_Event ThisEvent )
 				PostEvent.EventParam = (InteractionTime/90.0*4096);
 				PostWatertubeService(PostEvent);
 				ES_Timer_InitTimer(PASSAGE_OF_TIME_TIMER, HALF_SEC);
-				// Print keyboard instructions
+				/* Print keyboard instructions
 				printf("Reset [waiting]: Press '1-7' or 'q-u' to trigger servos\r\n");
 				printf("Reset [waiting]: Press 'i-8' to trigger knob vibrator\r\n");
 				printf("Reset [waiting]: Press 'm' to turn on the microphone service\r\n");
 				printf("Reset [waiting]: Press 'c' to fire the welcome performance\r\n");
 				printf("Reset [waiting]: Press 'x' to trigger reset (inactivity/timeout)\r\n");
-			} else if (ThisEvent.EventType == ES_TIMEOUT && ThisEvent.EventParam == PASSAGE_OF_TIME_TIMER && InteractionTime >= 90) { 
+				*/
+		  } else if (ThisEvent.EventType == ES_TIMEOUT && ThisEvent.EventParam == PASSAGE_OF_TIME_TIMER && InteractionTime >= 90) { 
 				// Main timer expired. Notify all service and move to Sleeping
 				PostEvent.EventType = ES_SLEEP;
 				PostResetService(PostEvent);

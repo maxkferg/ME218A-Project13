@@ -224,14 +224,14 @@ ES_Event RunWatertubeService( ES_Event ThisEvent )
 ****************************************************************************/
 void setWatertube(uint8_t tubeNumber, uint16_t waterHeight){
 		uint8_t PWMNumber = tubeNumber-1;
-		uint8_t PulseWidth = (waterHeight*2000/4096)+1000;
+		uint16_t PulseWidth = (waterHeight*2000/4096)+1000;
 	
 		if (tubeNumber<1 || tubeNumber>7){
 			printf("Invalid water tube number %i",tubeNumber);
 		} else if (waterHeight>4096){
 			printf("Invalid water tube height %i",waterHeight);
 		} else {
-			printf("Watertube: Change tube %i height to %i\n\r",tubeNumber,waterHeight);
+			//printf("Watertube: Change tube %i height to %i\n\r",tubeNumber,waterHeight);
 			//printf("Watertube: Change pwm %i height to %i\n\r",PWMNumber,PulseWidth);
 			PWM_TIVA_SetPulseWidth(PulseWidth,PWMNumber);
 	}
