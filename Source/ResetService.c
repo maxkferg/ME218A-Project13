@@ -47,6 +47,7 @@
 #include "BITDEFS.H"
 
 /*----------------------------- Module Defines ----------------------------*/
+#define VERBOSE 0
 #define ALL_BITS (0xff<<2)
 // these times assume a 1.000mS/tick timing
 #define ONE_SEC 1000
@@ -55,11 +56,14 @@
 #define THIRTY_SEC (ONE_SEC*30)
 #define ONE_MINUTE (ONE_SEC*60)
 
+
 /*---------------------------- Module Functions ---------------------------*/
 /* prototypes for private functions for this service.They should be functions
    relevant to the behavior of this service
 */
 static bool getButtonState(void);
+static void resetWake(void);
+static void resetSleep(void);
 
 /*---------------------------- Module Variables ---------------------------*/
 // with the introduction of Gen2, we need a module level Priority variable
@@ -136,9 +140,8 @@ bool CheckButtonEvents(void) {
 		ReturnVal = true;
 		if (CurrentButtonState == true) {
 			// If the reset button is down, then post reset event
-			ThisEvent.EventType = ES_INTERACTION;
+			ThisEvent.EventType = ES_RESET_BUTTON;
 			printf("RESET BUTTON PRESSED\r\n");
-			printf("POSTING AND INTERACTION TO RESET SERVICE\r\n");
 			PostResetService(ThisEvent);
 		}
 	}
@@ -185,7 +188,7 @@ ES_Event RunResetService( ES_Event ThisEvent )
 		// Exit immediately after setting timers ect
 		case ResetInit:
 			CurrentState = ResetWelcome;
-		printf("ResetService: Initializated.\r\n");
+			printf("ResetService: Initializated.\r\n");
 		break;
 			
 		// Welcome State
@@ -197,8 +200,21 @@ ES_Event RunResetService( ES_Event ThisEvent )
 				ES_Timer_InitTimer(PASSAGE_OF_TIME_TIMER, HALF_SEC);
 				ES_Timer_StopTimer(INACTIVITY_TIMER);
 				ES_Timer_InitTimer(INACTIVITY_TIMER, THIRTY_SEC);
+				// Start the microphone sampling
+				PostEvent.EventType = MICROPHONE_START;
+				PostMicrophoneService(PostEvent);
+				// Move to the welcome state
 				CurrentState = ResetRunning;
 				InteractionTime = 0;
+			} else if (ThisEvent.EventType == ES_RESET_BUTTON) {
+				// Reset button pressed during welcome mode
+				printf("ResetService [Welcome]: Resetting\r\n");
+				resetSleep();
+				resetWake();
+				// Start the microphone sampling
+				PostEvent.EventType = MICROPHONE_START;
+				PostMicrophoneService(PostEvent);
+				CurrentState = ResetWelcome;
 			}
 		break;
 			
@@ -215,13 +231,15 @@ ES_Event RunResetService( ES_Event ThisEvent )
 				PostEvent.EventParam = (InteractionTime/90.0*4096);
 				PostWatertubeService(PostEvent);
 				ES_Timer_InitTimer(PASSAGE_OF_TIME_TIMER, HALF_SEC);
-				/* Print keyboard instructions
-				printf("Reset [waiting]: Press '1-7' or 'q-u' to trigger servos\r\n");
-				printf("Reset [waiting]: Press 'i-8' to trigger knob vibrator\r\n");
-				printf("Reset [waiting]: Press 'm' to turn on the microphone service\r\n");
-				printf("Reset [waiting]: Press 'c' to fire the welcome performance\r\n");
-				printf("Reset [waiting]: Press 'x' to trigger reset (inactivity/timeout)\r\n");
-				*/
+				// Print keyboard instructions
+				if (VERBOSE){
+					printf("Reset [waiting]: Press '1-7' or 'q-u' to trigger servos\r\n");
+					printf("Reset [waiting]: Press 'i-8' to trigger knob vibrator\r\n");
+					printf("Reset [waiting]: Press 'm' to turn on the microphone service\r\n");
+					printf("Reset [waiting]: Press 'c' to fire the welcome performance\r\n");
+					printf("Reset [waiting]: Press 'x' to trigger reset (inactivity/timeout)\r\n");
+				}
+				
 		  } else if (ThisEvent.EventType == ES_TIMEOUT && ThisEvent.EventParam == PASSAGE_OF_TIME_TIMER && InteractionTime >= 90) { 
 				// Main timer expired. Notify all service and move to Sleeping
 				PostEvent.EventType = ES_SLEEP;
@@ -234,11 +252,13 @@ ES_Event RunResetService( ES_Event ThisEvent )
 				// Someone told me to reset everything
 				// Notify all services and move to Sleeping
 				printf("Reset: Inactivity expiration\r\n");
-				PostEvent.EventType = ES_SLEEP;
-				PostLEDService(PostEvent);
-				PostWatertubeService(PostEvent);
-				PostMicrophoneService(PostEvent);
+				resetSleep();
 				CurrentState = ResetSleeping;
+			} else if (ThisEvent.EventType == ES_RESET_BUTTON) {
+				// Reset button pressed
+				resetSleep();
+				resetWake();
+				CurrentState = ResetWelcome;
 			}
 		break;
 		
@@ -246,14 +266,10 @@ ES_Event RunResetService( ES_Event ThisEvent )
 		// All services are sleeping after the performance has completed
 		// Exit when any services posts an ES_INTERACTION
 		case ResetSleeping:
-			if (ThisEvent.EventType == ES_INTERACTION) {
-				ES_Timer_StopTimer(INACTIVITY_TIMER);
-				ES_Timer_InitTimer(INACTIVITY_TIMER, THIRTY_SEC);
-				// Pull all of the three services out of sleeping mode
-				PostEvent.EventType = ES_WAKE; 
-				PostLEDService(PostEvent);
-				PostWatertubeService(PostEvent);
-				PostMicrophoneService(PostEvent);
+			if (ThisEvent.EventType == ES_INTERACTION || ThisEvent.EventType == ES_RESET_BUTTON) {
+				printf("ResetService [Sleeping]: Resetting\r\n");
+				// Wake all the services and reset timers
+				resetWake();
 				// Move to the welcome state
 				CurrentState = ResetWelcome;
 			}
@@ -266,6 +282,31 @@ ES_Event RunResetService( ES_Event ThisEvent )
 /***************************************************************************
  private functions
  ***************************************************************************/
+
+static void resetSleep(void) {
+	// Put all the service to sleep
+	ES_Event PostEvent;
+	PostEvent.EventType = ES_SLEEP;
+	PostLEDService(PostEvent);
+	PostWatertubeService(PostEvent);
+	PostMicrophoneService(PostEvent);
+	CurrentState = ResetSleeping;
+}
+
+
+static void resetWake(void){
+	// Pull all of the three services out of sleeping mode
+	ES_Event PostEvent;
+	PostEvent.EventType = ES_WAKE; 
+	PostLEDService(PostEvent);
+	PostWatertubeService(PostEvent);
+	PostMicrophoneService(PostEvent);
+	// Reset the inactivity timer
+	ES_Timer_StopTimer(INACTIVITY_TIMER);
+	ES_Timer_InitTimer(INACTIVITY_TIMER, THIRTY_SEC);
+}
+
+
 bool getButtonState(void) {
 	uint8_t ButtonState = HWREG(GPIO_PORTB_BASE+(GPIO_O_DATA + ALL_BITS)) & BIT3HI;
 	if (ButtonState) {

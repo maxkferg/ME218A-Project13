@@ -181,7 +181,7 @@ bool PostMicrophoneService( ES_Event ThisEvent )
 ****************************************************************************/
 ES_Event RunMicrophoneService( ES_Event ThisEvent )
 {
-	float Sensitivity = 32;
+	float Sensitivity = 12;
 	ES_Event WaterTubeEvent;
 	ES_Event ReturnEvent;
   ReturnEvent.EventType = ES_NO_EVENT;
@@ -266,6 +266,7 @@ ES_Event RunMicrophoneService( ES_Event ThisEvent )
 				if (FourierCounter>100){
 					// Move to the Water state
 					ES_Event CurrentEvent;
+					printf("\r\n");
 					CurrentState = MicrophoneWaterState;
 					CurrentEvent.EventType = MICROPHONE_FOURIER_COMPLETED;
 					PostMicrophoneService(CurrentEvent);
@@ -290,42 +291,49 @@ ES_Event RunMicrophoneService( ES_Event ThisEvent )
 			if (ThisEvent.EventType==MICROPHONE_FOURIER_COMPLETED){
 				//PrintAudioBuffer();
 				//PrintFourierBuffer();
-				PrintAverageBuffer();
+				//PrintAverageBuffer();
 					
 				// Water tube 1
 				WaterTubeEvent.EventType = CHANGE_WATER_1;
 				WaterTubeEvent.EventParam = GetWaterHeight(1, Sensitivity);
 				PostWatertubeService(WaterTubeEvent);
+				printf("Water1 = %f\r\n",GetWaterHeight(1, Sensitivity));
 
 				// Water tube 2					
 				WaterTubeEvent.EventType = CHANGE_WATER_2;
 				WaterTubeEvent.EventParam = GetWaterHeight(2, Sensitivity);
 				PostWatertubeService(WaterTubeEvent);
+				printf("Water2 = %f\r\n",GetWaterHeight(2, Sensitivity));
 				
 				// Water tube 3
 				WaterTubeEvent.EventType = CHANGE_WATER_3;
 				WaterTubeEvent.EventParam = GetWaterHeight(3, Sensitivity);
 				PostWatertubeService(WaterTubeEvent);
+				printf("Water3 = %f\r\n",GetWaterHeight(3, Sensitivity));
 				
 				// Water tube 4
 				WaterTubeEvent.EventType = CHANGE_WATER_4;
 				WaterTubeEvent.EventParam = GetWaterHeight(4, Sensitivity);
 				PostWatertubeService(WaterTubeEvent);
+				printf("Water4 = %f\r\n",GetWaterHeight(4, Sensitivity));
 				
 				// Water tube 5
 				WaterTubeEvent.EventType = CHANGE_WATER_5;
 				WaterTubeEvent.EventParam = GetWaterHeight(5, Sensitivity);
 				PostWatertubeService(WaterTubeEvent);
+				printf("Water5 = %f\r\n",GetWaterHeight(5, Sensitivity));
 				
 				// Water tube 6
 				WaterTubeEvent.EventType = CHANGE_WATER_6;
 				WaterTubeEvent.EventParam = GetWaterHeight(6, Sensitivity);
 				PostWatertubeService(WaterTubeEvent);
+				printf("Water6 = %f\r\n",GetWaterHeight(6, Sensitivity));
 				
 				// Water tube 7
-				WaterTubeEvent.EventType = CHANGE_WATER_7;
-				WaterTubeEvent.EventParam = GetWaterHeight(7, Sensitivity);
-				PostWatertubeService(WaterTubeEvent);
+				//WaterTubeEvent.EventType = CHANGE_WATER_7;
+				//WaterTubeEvent.EventParam = GetWaterHeight(7, Sensitivity);
+				//PostWatertubeService(WaterTubeEvent);
+				//printf("Water7 = %f\r\n",GetWaterHeight(7, Sensitivity));
 				
 				// Now we are going to start sampling again
 				printf("Microphone sample complete\r\n");
@@ -371,33 +379,31 @@ static float GetWaterHeight(uint8_t WaterTubeNumber, float Sensitivity){
 		// Depending on the water tube number we sum over different frequency ranges
 		// Water tube 1
 		case 1:
-			printf("Sensitivity %f\r\n",Sensitivity);
-			printf("Fourier %f\r\n",SumFourierOutputs(0,2));
-			return Sensitivity*(SumFourierOutputs(0,2));
+			return Sensitivity*(SumFourierOutputs(0,10));
 	
 		// Water tube 2
 		case 2:
-			return Sensitivity*(SumFourierOutputs(2,4));
+			return Sensitivity*(SumFourierOutputs(10,20));
 
 		// Water tube 3
 		case 3:
-			return Sensitivity*(SumFourierOutputs(4,6));
+			return Sensitivity*(SumFourierOutputs(20,30));
 
 		// Water tube 4			
 		case 4:
-			return Sensitivity*(SumFourierOutputs(6,8));
+			return Sensitivity*(SumFourierOutputs(30,40));
 
 		// Water tube 5
 		case 5:
-			return Sensitivity*(SumFourierOutputs(8,10));
+			return Sensitivity*(SumFourierOutputs(40,50));
 
 		// Water tube 6
 		case 6:
-			return Sensitivity*(SumFourierOutputs(12,14));
+			return Sensitivity*(SumFourierOutputs(50,60));
 
 		// Water tube 7
 		case 7:
-			return Sensitivity*(SumFourierOutputs(14,16));
+			return Sensitivity*(SumFourierOutputs(60,70));
 	}
 	printf("Unknown tube %i",WaterTubeNumber);
 	return 0;

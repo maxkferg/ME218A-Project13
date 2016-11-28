@@ -21,9 +21,8 @@ bool PostKnobService( ES_Event ThisEvent );
 bool CheckKnobEvents( void );
 ES_Event RunKnobService( ES_Event ThisEvent );
 
-typedef enum { KnobInitState,
-							 KnobFourierState,
-							 KnobResetState
+typedef enum { KnobVibrating,
+							 KnobSleeping
 } KnobState_t ;
 
 

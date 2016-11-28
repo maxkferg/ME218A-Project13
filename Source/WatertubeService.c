@@ -182,14 +182,15 @@ ES_Event RunWatertubeService( ES_Event ThisEvent )
 			// Reset all the tubes on sleep
 			if( ThisEvent.EventType == ES_SLEEP){
 				// Empty all the tubes
+				uint16_t empty = 0;
 				printf("Watertube: Emptying tubes.\r\n");
-				setWatertube(1,ThisEvent.EventParam);
-				setWatertube(2,ThisEvent.EventParam);
-				setWatertube(3,ThisEvent.EventParam);
-				setWatertube(4,ThisEvent.EventParam);
-				setWatertube(5,ThisEvent.EventParam);
-				setWatertube(6,ThisEvent.EventParam);
-				setWatertube(7,ThisEvent.EventParam);
+				setWatertube(1,empty);
+				setWatertube(2,empty);
+				setWatertube(3,empty);
+				setWatertube(4,empty);
+				setWatertube(5,empty);
+				setWatertube(6,empty);
+				setWatertube(7,empty);
 				// Post my own sleeping event
 				printf("Watertube: Sleeping\r\n");
 				CurrentState = WaterSleepingState;
@@ -227,9 +228,9 @@ void setWatertube(uint8_t tubeNumber, uint16_t waterHeight){
 		uint16_t PulseWidth = (waterHeight*2000/4096)+1000;
 	
 		if (tubeNumber<1 || tubeNumber>7){
-			printf("Invalid water tube number %i",tubeNumber);
+			printf("Invalid water tube number %i\r\n",tubeNumber);
 		} else if (waterHeight>4096){
-			printf("Invalid water tube height %i",waterHeight);
+			printf("Invalid water tube height %i\r\n",waterHeight);
 		} else {
 			//printf("Watertube: Change tube %i height to %i\n\r",tubeNumber,waterHeight);
 			//printf("Watertube: Change pwm %i height to %i\n\r",PWMNumber,PulseWidth);

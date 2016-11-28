@@ -304,6 +304,7 @@ typedef enum {  ES_NO_EVENT = 0,
 								ES_SLEEP,  // Posted to make services sleep  
 								ES_WAKE,   // Posted to make services wake
 								ES_INTERACTION, 
+								ES_RESET_BUTTON, 
 								ES_WELCOME_COMPLETE
 } ES_EventTyp_t;
 
@@ -360,7 +361,7 @@ typedef enum {  ES_NO_EVENT = 0,
 #define TIMER3_RESP_FUNC PostResetService
 #define TIMER4_RESP_FUNC PostLEDService
 #define TIMER5_RESP_FUNC PostResistiveStripService
-#define TIMER6_RESP_FUNC TIMER_UNUSED
+#define TIMER6_RESP_FUNC PostKnobService
 #define TIMER7_RESP_FUNC TIMER_UNUSED
 #define TIMER8_RESP_FUNC TIMER_UNUSED
 #define TIMER9_RESP_FUNC TIMER_UNUSED
@@ -382,6 +383,6 @@ typedef enum {  ES_NO_EVENT = 0,
 #define INACTIVITY_TIMER 3
 #define WELCOME_LED_TIMER 4
 #define RESISTIVE_STRIP_TIMER 5
-//#define KNOB_VIBRATION_TIMER 6
+#define KNOB_VIBRATION_TIMER 6
 
 #endif /* CONFIGURE_H */

@@ -27,6 +27,7 @@
 #include "KnobService.h"
 
 /*----------------------------- Module Defines ----------------------------*/
+#define VIBRATION_TIME 1000
 
 /*---------------------------- Module Functions ---------------------------*/
 /* prototypes for private functions for this service.They should be functions
@@ -34,9 +35,14 @@
 */
 static uint32_t getADCStateKnob(void);
 static uint32_t getADCDiffKnob(uint32_t CurrentADCStateKnob, uint32_t LastADCStateKnob);
+static void startKnobVibration(uint32_t Voltage);
+static void stopKnobVibration(void);
+
+
 /*---------------------------- Module Variables ---------------------------*/
 // with the introduction of Gen2, we need a module level Priority variable
 static uint8_t MyPriority;
+static KnobState_t CurrentState;
 static uint32_t LastADCStateKnob;
 
 
@@ -71,20 +77,20 @@ bool InitKnobService ( uint8_t Priority )
   
   ThisEvent.EventType = ES_INIT;
 	LastADCStateKnob = getADCStateKnob();
-	printf("last adc state in init fcn = %u \r\n",LastADCStateKnob);
 	
-	// Intialize the VIBRATION TIMER
-	//ES_Timer_InitTimer(KNOB_VIBRATION_TIMER,1000);//Do we need this?
+	// The knon does not vibrate on startup
+	CurrentState = KnobVibrating;
+	
+	// Intialize the KNOB_VIBRATION_TIMER
+	ES_Timer_Init(ES_Timer_RATE_1mS);
 	
 	// The Knob Serices uses port 8 on the Tiva ADC
 	// Initializing group four, initilizes port 7&8
 	PWM_TIVA_SetPeriod(1250, 4);
 
-  if (ES_PostToService( MyPriority, ThisEvent) == true)
-  {
+  if (ES_PostToService( MyPriority, ThisEvent) == true) {
       return true;
-  }else
-  {
+  } else {
       return false;
   }
 }
@@ -113,7 +119,7 @@ bool CheckKnobEvents(void) {
 	uint32_t CurrentADCStateKnob = getADCStateKnob();
 	uint32_t diff = getADCDiffKnob(CurrentADCStateKnob, LastADCStateKnob);
 	
-	if (diff >=100){
+	if (diff >=300){
 		// Post to my own queue
 		TouchEvent.EventType=CHANGE_KNOB_VIBRATION;
 		TouchEvent.EventParam = CurrentADCStateKnob;
@@ -132,7 +138,7 @@ bool CheckKnobEvents(void) {
 
 /****************************************************************************
  Function
-    RunTemplateService
+    RunKnobService
 
  Parameters
    ES_Event : the event to process
@@ -144,15 +150,36 @@ ES_Event RunKnobService( ES_Event ThisEvent )
 {
   ES_Event ReturnEvent;
   ReturnEvent.EventType = ES_NO_EVENT; // assume no errors
-
-	if(ThisEvent.EventType == CHANGE_KNOB_VIBRATION){//pwm channel 7
-		uint32_t Voltage = ThisEvent.EventParam;
-		printf("Got touch event CHANGE_VIBRATION %d\n\r",Voltage);
-		int PulseWidth = (Voltage*1250/4096);
-		printf("PulseWidth = %d",PulseWidth);
-		PWM_TIVA_SetPulseWidth(PulseWidth,8);
-	}
 	
+	switch (CurrentState){
+		// In this state the knob is vibrating
+		// Exit this state when the timer stops
+		case KnobVibrating:
+			if(ThisEvent.EventType == CHANGE_KNOB_VIBRATION){
+				startKnobVibration(ThisEvent.EventParam);
+				ES_Timer_StopTimer(KNOB_VIBRATION_TIMER);
+				ES_Timer_InitTimer(KNOB_VIBRATION_TIMER, VIBRATION_TIME);
+			}
+			if (ThisEvent.EventType == ES_TIMEOUT && ThisEvent.EventParam == KNOB_VIBRATION_TIMER){
+				// Move to the sleeping mode
+				CurrentState = KnobSleeping;
+				stopKnobVibration();
+			}
+		break;
+	
+		// In this state the knob is stopped
+		// Exit this state when the knob is moved
+		case KnobSleeping:
+			if(ThisEvent.EventType == CHANGE_KNOB_VIBRATION){
+				// Wake up and start vibrating
+				startKnobVibration(ThisEvent.EventParam);
+				ES_Timer_InitTimer(KNOB_VIBRATION_TIMER, VIBRATION_TIME);
+				CurrentState = KnobVibrating;
+			}
+		break;
+	}
+
+
 	//PWM_TIVA_SetFreq( uint16_t reqFreq, uint8_t group);
 
   return ReturnEvent;
@@ -161,6 +188,66 @@ ES_Event RunKnobService( ES_Event ThisEvent )
 /***************************************************************************
  private functions
  ***************************************************************************/
+
+
+/****************************************************************************
+ Function
+    startKnobVibration
+
+ Parameters
+   None
+
+ Returns
+   Nothing
+
+ Description
+    Start the knob vibrating 
+****************************************************************************/
+void startKnobVibration(uint32_t Voltage) {
+	printf("KnobService: Vibrating at %i \r\n",Voltage);
+	uint16_t PulseWidth = (Voltage*1250/4096);
+	if (PulseWidth>1250){
+		printf("WARNING: Vibrator pulse width=%i",PulseWidth);
+	} else {
+		PWM_TIVA_SetPulseWidth(PulseWidth,8);
+	}
+}
+
+
+
+/****************************************************************************
+ Function
+    stopKnobVibration
+
+ Parameters
+   None
+
+ Returns
+   Nothing
+
+ Description
+    Stop the knob vibrating 
+****************************************************************************/
+void stopKnobVibration(void) {
+		uint8_t stopped = 0;
+		printf("KnobService: Sleeping\r\n");
+		PWM_TIVA_SetPulseWidth(stopped,8);
+}
+
+
+
+
+/****************************************************************************
+ Function
+    getADCStateKnob
+
+ Parameters
+   void
+
+ Returns
+   uint32_t Voltage. Return the current voltage at the ADC knob
+
+****************************************************************************/
 uint32_t getADCStateKnob(void) {
 	uint32_t ADInput[4];
 	uint32_t CurrentInputKnob;
@@ -169,6 +256,20 @@ uint32_t getADCStateKnob(void) {
 	//printf("Current Knob Input is %u.\r\n", CurrentInputKnob);
 	return CurrentInputKnob;
 }
+
+
+
+/****************************************************************************
+ Function
+    getADCDiffKnob
+
+ Parameters
+   CurrentADCState, LastADCState
+
+ Returns
+   uint32_t Voltage. Return the difference between the previous ADC state and the current one
+
+****************************************************************************/
 uint32_t getADCDiffKnob(uint32_t CurrentADCStateKnob, uint32_t LastADCStateKnob) {
 	if (CurrentADCStateKnob >= LastADCStateKnob) {
 		return (CurrentADCStateKnob - LastADCStateKnob);
