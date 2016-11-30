@@ -84,7 +84,7 @@ void SR_Init(void){
 	HWREG(GPIO_PORTB_BASE+GPIO_O_DIR) |= (DATA | SCLK | RCLK);
 	
   // start with the data & sclk lines low and the RCLK line high
-	HWREG(GPIO_PORTB_BASE+(GPIO_O_DATA+ALL_BITS)) = (DATA_LO & SCLK_LO & RCLK_HI);
+	HWREG(GPIO_PORTB_BASE+(GPIO_O_DATA+ALL_BITS)) = (DATA_LO & SCLK_LO & RCLK_LO);
 }
 
 

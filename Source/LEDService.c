@@ -13,6 +13,8 @@
 /* include header files for this state machine as well as any machines at the
    next lower level in the hierarchy that are sub-machines to this machine
 */
+#include <stdio.h>
+
 #include "ES_Configure.h"
 #include "ES_Framework.h"
 #include "ES_Port.h"
@@ -204,6 +206,14 @@ ES_Event RunLEDService( ES_Event ThisEvent )
 		case LEDWaiting4ADC:
 			if (ThisEvent.EventType==RESISTIVE_STRIP_CHANGED){
 				printf("LED Moving to Mode %i\r\n\n",ThisEvent.EventParam);
+				if (ThisEvent.EventParam == 0) {
+					/*lightLED(0x88950000);*/ 
+					//for (int i=0; i<18; i++) {
+					printf("The hex num in binary: 10001000100101010000000000000000\r\n");
+					lightLED(0x88950000);
+					//}
+				}
+				
 				if (ThisEvent.EventParam == 0) lightLED(0x88950000);
 				if (ThisEvent.EventParam == 1) lightLED(0x47628000);
 				if (ThisEvent.EventParam == 2) lightLED(0x39BC4000);
@@ -211,13 +221,16 @@ ES_Event RunLEDService( ES_Event ThisEvent )
 				if (ThisEvent.EventParam == 4) lightLED(0x7128C000);
 				if (ThisEvent.EventParam == 5) lightLED(0x8AD50000);
 				if (ThisEvent.EventParam == 6) lightLED(0x57FA8000);
-				if (ThisEvent.EventParam == 7) lightLED(0xBD4F4000);
-				if (ThisEvent.EventParam == 8) lightLED(0xE9D9C000);
-				if (ThisEvent.EventParam == 9) lightLED(0x4C9B0000);
+				if (ThisEvent.EventParam == 7) lightLED(0xBD2F4000); //Changed to make symmetric 11/29/16
+				if (ThisEvent.EventParam == 8) lightLED(0xF2D9C000); //Changed to make symmetric 11/29/16
+				if (ThisEvent.EventParam == 9) lightLED(0x4C968000); //Changed to make symmetric 11/29/16
 			}
+			
 			if (ThisEvent.EventType == ES_SLEEP) {
 				printf("LEDService Sleeping.\r\n");
-				LEDSleepingSequence();
+				//for (int i=0; i<18; i++) {
+					LEDSleepingSequence();
+				//}
 				NextMode = Sleeping;
 			}
 			break;
@@ -226,7 +239,9 @@ ES_Event RunLEDService( ES_Event ThisEvent )
 			if (ThisEvent.EventType == ES_WAKE) {
 				printf("LED Service goes back to welcome mode.\r\n");
 				NextMode = InitLED;
-				lightLED(0x00000000); // Clear all LED bits for a new round
+				//for (int i=0; i <18; i++) {
+					lightLED(0x00000000); // Clear all LED bits for a new round
+				//}
 				TransitionEvent.EventType = ES_INIT;
 				PostLEDService(TransitionEvent);
 			}
@@ -259,7 +274,7 @@ ES_Event RunLEDService( ES_Event ThisEvent )
  Description
    Initialize the shift register
 ****************************************************************************/
-void SR_Init(void){
+static void SR_Init(void){
   // Set up port B by enabling the peripheral clock and setting the direction
   // of PB0, PB1 & PB2 to outputs
 	HWREG(SYSCTL_RCGCGPIO)|= SYSCTL_RCGCGPIO_R1; 
@@ -268,9 +283,9 @@ void SR_Init(void){
 	HWREG(GPIO_PORTB_BASE+GPIO_O_DEN)|= (GPIO_PIN_0 | GPIO_PIN_1 | GPIO_PIN_2);
 	HWREG(GPIO_PORTB_BASE+GPIO_O_DIR)|= (GPIO_PIN_0 | GPIO_PIN_1 | GPIO_PIN_2);
 	
-  // Start with the Data & SCLK lines (PB0, PB1) low and the RCLK line (PB2) high
+  // Start with the Data & SCLK lines (PB0, PB1) low and the RCLK line (PB2)low
 	HWREG(GPIO_PORTB_BASE+(GPIO_O_DATA+ALL_BITS)) &= ~(GPIO_PIN_0 | GPIO_PIN_1);
-	HWREG(GPIO_PORTB_BASE+(GPIO_O_DATA+ALL_BITS)) |= GPIO_PIN_2;
+	HWREG(GPIO_PORTB_BASE+(GPIO_O_DATA+ALL_BITS)) &= ~GPIO_PIN_2;
 }
 
 
@@ -290,14 +305,18 @@ void SR_Init(void){
 ****************************************************************************/
 void lightLED(uint32_t LEDHex) {
 	// Lower the register clock
-	HWREG(GPIO_PORTB_BASE+(GPIO_O_DATA + ALL_BITS)) &= ~(GPIO_PIN_2);
+	//HWREG(GPIO_PORTB_BASE+(GPIO_O_DATA + ALL_BITS)) &= ~(GPIO_PIN_2);
 	// Shift out data while pulsing SCLK
+	
+	printf("\r\n");
 	for(int i=0; i < LEDBits; i++)
 	{
 		if((LEDHex & 0x80000000) == 0x80000000){
 			HWREG(GPIO_PORTB_BASE+(GPIO_O_DATA + ALL_BITS)) |= GPIO_PIN_0;   
+			printf("1");
 		} else {
 			HWREG(GPIO_PORTB_BASE+(GPIO_O_DATA + ALL_BITS)) &= ~(GPIO_PIN_0);
+			printf("0");
 		}
 		
 		// Pulse SCLK(PB1)
@@ -305,8 +324,10 @@ void lightLED(uint32_t LEDHex) {
 		HWREG(GPIO_PORTB_BASE+(GPIO_O_DATA + ALL_BITS)) &= ~(GPIO_PIN_1);
 		LEDHex = LEDHex << 1;
 	}
+	printf("\r\n");
 	// Raise the register clock to latch the new data
 	HWREG(GPIO_PORTB_BASE+(GPIO_O_DATA + ALL_BITS)) |= (GPIO_PIN_2);
+	HWREG(GPIO_PORTB_BASE+(GPIO_O_DATA + ALL_BITS)) &= ~(GPIO_PIN_2);
 }
 
 
@@ -335,8 +356,9 @@ void lightLEDWelcome(uint32_t LEDHex) {
 	HWREG(GPIO_PORTB_BASE+(GPIO_O_DATA + ALL_BITS)) &= ~(GPIO_PIN_1);
 	
 	// Pulse RCLK(PB2) to latch new data
-	HWREG(GPIO_PORTB_BASE+(GPIO_O_DATA + ALL_BITS)) &= ~(GPIO_PIN_2);
 	HWREG(GPIO_PORTB_BASE+(GPIO_O_DATA + ALL_BITS)) |= (GPIO_PIN_2);
+	HWREG(GPIO_PORTB_BASE+(GPIO_O_DATA + ALL_BITS)) &= ~(GPIO_PIN_2);
+	
 	
 	ES_Timer_InitTimer(WELCOME_LED_TIMER, QUARTER_SEC); //(timer posts to RunLEDService)
 	//printf("Welcome Timer Set Up.\r\n");
@@ -371,16 +393,16 @@ uint32_t getRandomNum(void) {
 ****************************************************************************/
 void LEDSleepingSequence(void) {
 	lightLED(0xFFFFC000);
-	lightLED(0x9FFF4000);
-	lightLED(0xD3FA4000);
-	lightLED(0x5A52C000);
-	lightLED(0x5BF2C000);
-	lightLED(0x5FFEC000);
-	lightLED(0xFFFFC000);
-	lightLED(0xFD3FC000);
-	lightLED(0xEB17C000);
-	lightLED(0x5A52C000);
-	lightLED(0xFA53C000);
-	lightLED(0xFE5FC000);
-	lightLED(0xFFFFC000);	
+//	lightLED(0x9FFF4000);
+//	lightLED(0xD3FA4000);
+//	lightLED(0x5A52C000);
+//	lightLED(0x5BF2C000);
+//	lightLED(0x5FFEC000);
+//	lightLED(0xFFFFC000);
+//	lightLED(0xFD3FC000);
+//	lightLED(0xEB17C000);
+//	lightLED(0x5A52C000);
+//	lightLED(0xFA53C000);
+//	lightLED(0xFE5FC000);
+//	lightLED(0xFFFFC000);	
 }
